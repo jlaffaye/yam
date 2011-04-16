@@ -14,25 +14,9 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include <stdio.h>
+#ifndef _DO_H
+#define _DO_H
 
-#include "do.h"
-#include "graph.h"
-#include "subprocess.h"
-#include "yamfile.h"
+int do_jobs(int num_proc);
 
-int
-main(void)
-{
-	int num_proc = 2;
-
-	graph_init();
-	yamfile();
-	//dump_graphviz(stdout);
-
-	do_jobs(num_proc);
-
-	graph_free();
-
-	return 0;
-}
+#endif

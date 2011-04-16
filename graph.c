@@ -42,10 +42,11 @@ nodes_add(struct nodes *ns, struct node *n)
 	ns->len++;
 }
 
-static void
+static unsigned int
 node_mark_todo(struct node *n)
 {
 	size_t i;
+	unsigned int nb = 1;
 
 	/*
 	 * If we mark a node more than once, we will increment its parents more
@@ -57,10 +58,12 @@ node_mark_todo(struct node *n)
 
 	for (i = 0; i < n->parents.len; i++) {
 		if (n->parents.nodes[i]->todo != 1)
-			node_mark_todo(n->parents.nodes[i]);
+			nb += node_mark_todo(n->parents.nodes[i]);
 
 		n->parents.nodes[i]->waiting++;
 	}
+
+	return nb;
 }
 
 /* stat(2) only if necessary */
@@ -75,19 +78,20 @@ node_mark_todo(struct node *n)
 			perror("stat()");												\
 	}																		\
 
-static void
+static unsigned int
 node_compute(struct node *n)
 {
 	struct stat st;
 	size_t i;
+	unsigned int nb = 0;
 
 	/* depth first */
 	for (i = 0; i < n->childs.len; i++) {
-		node_compute(n->childs.nodes[i]);
+		nb += node_compute(n->childs.nodes[i]);
 	}
 
 	if (n->todo != 0)
-		return;
+		return nb;
 
 	NODE_STAT(n, st);
 
@@ -95,11 +99,13 @@ node_compute(struct node *n)
 		NODE_STAT(n->childs.nodes[i], st);
 		if (n->childs.nodes[i]->mtime > n->mtime) {
 			node_mark_todo(n);
-			return;
+			nb++;
+			return nb;
 		}
 	}
 
 	n->todo = -1;
+	return 0;
 }
 
 void
@@ -151,23 +157,26 @@ graph_add_dep(struct node *n, const char *name)
 	nodes_add(&dep->parents, n);
 }
 
-struct node *
-graph_compute(void)
+unsigned int
+graph_compute(struct node **jobs)
 {
 	struct node *n;
-	struct node *jobs = NULL;
+	unsigned int nb = 0;
+
+	*jobs = NULL;
 
 	for (n = g.index; n != NULL; n = n->hh.next) {
 		if (n->todo != 0)
 			continue;
 
-		node_compute(n);
+		nb += node_compute(n);
 
 		if (n->todo == 1 && n->waiting == 0)
-			DL_APPEND(jobs, n);
+			DL_APPEND(*jobs, n);
+
 	}
 
-	return jobs;
+	return nb;
 }
 
 void

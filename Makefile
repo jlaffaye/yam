@@ -1,7 +1,8 @@
 PROG=		yam
-SRCS=		main.c	\
-		graph.c \
-		subprocess.c \
+SRCS=		do.c		\
+		graph.c 	\
+		main.c		\
+		subprocess.c 	\
 		yamfile.c
 
 WARNS=		3

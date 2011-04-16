@@ -74,7 +74,7 @@ void graph_free(void);
 struct node * graph_get(const char *key);
 void graph_add_dep(struct node *n, const char *name);
 
-struct node * graph_compute(void);
+unsigned int graph_compute(struct node **jobs);
 
 void dump_graphviz(FILE *out);
 
