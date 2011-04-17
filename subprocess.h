@@ -19,7 +19,7 @@
 
 #include <unistd.h>
 
-pid_t popen2(const char *cmd, int *fd);
+pid_t popen2(const char *cmd, int child_id, int *fd);
 int pclose2(pid_t pid, int fd);
 
 #endif

@@ -24,7 +24,7 @@
 #include "subprocess.h"
 
 pid_t
-popen2(const char *cmd, int *fd)
+popen2(const char *cmd, int child_id, int *fd)
 {
 	int fildes[2];
 	pid_t pid;
@@ -48,9 +48,13 @@ popen2(const char *cmd, int *fd)
 
 	/* child */
 	if (pid == 0) {
+		char e[20];
 		close(fildes[0]);
 		dup2(fildes[1], 1); /* stdout */
 		dup2(fildes[1], 2); /* stderr */
+
+		snprintf(e, sizeof(e), "YAM_CHILD_ID=%d", child_id);
+		putenv(e);
 
 		execl("/bin/sh", "sh", "-c", cmd, NULL);
 		perror("execl()");
