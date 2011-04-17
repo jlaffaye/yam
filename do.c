@@ -18,13 +18,13 @@
 #include <sys/uio.h>
 
 #include <assert.h>
-#include <err.h> /* TODO: remove as BSD-specific */
 #include <stdlib.h>
 #include <unistd.h>
 #include <poll.h>
 
 #include <stdio.h>
 
+#include "err.h"
 #include "do.h"
 #include "graph.h"
 #include "subprocess.h"
@@ -61,7 +61,7 @@ start_job(struct state *s)
 
 	n = s->jobs;
 	if ((s->pi[i].pid = popen2(n->cmd, i, &fd)) < 0) {
-		perror("popen2()");
+		warn("popen2()");
 		return 1;
 	}
 
@@ -115,7 +115,7 @@ read_pipe(struct state *s, int i)
 	char buf[8192];
 
 	if ((sz = read(s->pfd[i].fd, buf, sizeof(buf))) < 0) {
-		perror("read()");
+		warn("read()");
 		finish_job(s, i);
 		return 1;
 	}

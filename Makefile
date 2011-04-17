@@ -1,5 +1,6 @@
 PROG=		yam
 SRCS=		do.c		\
+		err.c		\
 		graph.c 	\
 		main.c		\
 		subprocess.c 	\
