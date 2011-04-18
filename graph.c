@@ -97,11 +97,8 @@ node_compute(struct node *n)
 
 	for (i = 0; i < n->childs.len; i++) {
 		NODE_STAT(n->childs.nodes[i], st);
-		if (n->childs.nodes[i]->mtime > n->mtime) {
-			node_mark_todo(n);
-			nb++;
-			return nb;
-		}
+		if (n->childs.nodes[i]->mtime > n->mtime)
+			return node_mark_todo(n);
 	}
 
 	n->todo = -1;
