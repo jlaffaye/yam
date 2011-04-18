@@ -14,6 +14,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#include <unistd.h>
 #include <stdio.h>
 
 #include "do.h"
@@ -22,15 +23,29 @@
 #include "yamfile.h"
 
 int
-main(void)
+main(int argc, char **argv)
 {
 	int num_proc = 2;
+	int gflag = 0;
+	int ch;
+
+	while ((ch = getopt(argc, argv, "g")) != -1) {
+		switch(ch) {
+			case 'g':
+				gflag = 1;
+				break;
+		}
+	}
+	argc -= optind;
+	argv += optind;
 
 	graph_init();
 	yamfile();
-	//dump_graphviz(stdout);
 
-	do_jobs(num_proc);
+	if (gflag == 1)
+		dump_graphviz(stdout);
+	else
+		do_jobs(num_proc);
 
 	graph_free();
 

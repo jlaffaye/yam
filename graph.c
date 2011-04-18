@@ -186,11 +186,21 @@ dump_graphviz(FILE *out)
 	size_t i;
 
 	fprintf(out, "digraph yam {\n");
+	fprintf(out, "node [fontsize=10, shape=box, height=0.25]\n");
+	fprintf(out, "edge [fontsize=10]\n");
 
 	for (n = g.index; n != NULL; n = n->hh.next) {
-		fprintf(out, "\"%s\";\n", n->name);
-		for (i = 0; i < n->childs.len; i++) {
-			fprintf(out, "\"%s\" -> \"%s\";\n", n->name, n->childs.nodes[i]->name);
+		fprintf(out, "\"%p\" [label=\"%s\"];\n", n, n->name);
+		if (n->childs.len == 1) {
+			fprintf(out, "\"%p\" -> \"%p\" [label=\" %s\"];\n",
+					n->childs.nodes[0], n, n->cmd);
+		} else if (n->childs.len > 1) {
+			fprintf(out, "\"%p!\" [shape=ellipse, label=\"%s\"];\n", n, n->cmd);
+			for (i = 0; i < n->childs.len; i++) {
+				fprintf(out, "\"%p\" -> \"%p!\";\n", n->childs.nodes[i],
+						n);
+			}
+			fprintf(out, "\"%p!\" -> \"%p\";", n, n);
 		}
 	}
 
