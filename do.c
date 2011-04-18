@@ -57,6 +57,7 @@ start_job(struct state *s)
 	for (i = 0; i < s->num_proc; i++)
 		if (s->pfd[i].fd == -1)
 			break;
+	assert(i < s->num_proc);
 	assert(s->pfd[i].fd == -1);
 
 	n = s->jobs;
@@ -161,12 +162,11 @@ do_jobs(int num_proc)
 	 * If there is an error, we still want to wait for running jobs to finish.
 	 */
 	while (s.num_done != s.num_jobs && (error == 0 || s.num_active > 0)) {
-
 		/*
 		 * Launch new jobs if we have empty slots and if we have pending jobs.
 		 * If there is an error, we do not want to launch new jobs.
 		 */
-		while (s.num_active <= s.num_proc && s.jobs != NULL && error == 0)
+		while (s.num_active < s.num_proc && s.jobs != NULL && error == 0)
 			start_job(&s);
 
 		assert(s.num_active > 0);
