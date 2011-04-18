@@ -20,5 +20,6 @@
 void err(int code, const char *fmt, ...);
 void die(const char *fmt, ...);
 void warn(const char *fmt, ...);
+void warnx(const char *fmt, ...);
 
 #endif

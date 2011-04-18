@@ -14,10 +14,12 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include <unistd.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 #include "do.h"
+#include "err.h"
 #include "graph.h"
 #include "subprocess.h"
 #include "yamfile.h"
@@ -25,14 +27,19 @@
 int
 main(int argc, char **argv)
 {
-	int num_proc = 2;
+	int num_proc = 1;
 	int gflag = 0;
 	int ch;
 
-	while ((ch = getopt(argc, argv, "g")) != -1) {
+	while ((ch = getopt(argc, argv, "gj:")) != -1) {
 		switch(ch) {
 			case 'g':
 				gflag = 1;
+				break;
+			case 'j':
+				num_proc = (int)strtol(optarg, (char **)NULL, 10);
+				if (num_proc == 0)
+					warnx("wrong -j arg `%s'", optarg);
 				break;
 		}
 	}
