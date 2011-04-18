@@ -27,6 +27,7 @@
 #include "err.h"
 #include "do.h"
 #include "graph.h"
+#include "ipc.h"
 #include "subprocess.h"
 #include "yamfile.h"
 
@@ -157,6 +158,8 @@ do_jobs(int num_proc)
 		s.pfd[i].events = POLLIN;
 	}
 
+	s.pfd[s.num_proc].fd = ipc_listen();
+
 	/*
 	 * Iterate as long as there are jobs to do/being done.
 	 * If there is an error, we still want to wait for running jobs to finish.
@@ -184,6 +187,7 @@ do_jobs(int num_proc)
 			ipc(&s);
 	}
 
+	ipc_close(s.pfd[s.num_proc].fd);
 	free(s.pfd);
 	free(s.pi);
 	return error;

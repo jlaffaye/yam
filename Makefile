@@ -2,6 +2,7 @@ PROG=		yam
 SRCS=		do.c		\
 		err.c		\
 		graph.c 	\
+		ipc.c		\
 		main.c		\
 		subprocess.c 	\
 		yamfile.c
