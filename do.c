@@ -19,6 +19,8 @@
 
 #include <assert.h>
 #include <stdlib.h>
+#define _WITH_GETLINE
+#include <stdio.h>
 #include <unistd.h>
 #include <poll.h>
 
@@ -136,7 +138,27 @@ read_pipe(struct state *s, int i)
 static int
 ipc(struct state *s)
 {
-	/* TODO */
+	FILE *fp;
+	char *line = NULL;
+	size_t cap = 0;
+	ssize_t len;
+	int child_id = -1;
+	struct node *n;
+
+	fp = ipc_accept(s->pfd[s->num_proc].fd);
+
+	while ((len = getline(&line, &cap, fp)) > 0) {
+		if (line[len - 1] == '\n')
+			line[len - 1] = '\0';
+
+		if (child_id == -1) {
+			child_id = (int)strtol(line, NULL, 10);
+			n = s->pi[child_id].node;
+		} else {
+		}
+	}
+
+	fclose(fp);
 	return 0;
 }
 

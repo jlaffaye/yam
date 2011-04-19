@@ -48,6 +48,8 @@ ipc_listen(void)
 		err(1, "liten()");
 
 	setenv("YAM_IPC", path, 1);
+	/* FIXME */
+	putenv("LD_PRELOAD=/home/jlaffaye/proj/yam/wrapper/libwrp.so");
 
 	return fd;
 }

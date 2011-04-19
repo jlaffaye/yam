@@ -1,13 +1,90 @@
+#include <sys/param.h>
 #include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+
 #include <dlfcn.h>
 #include <fcntl.h>
+#include <pthread.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
-void send_data_ipc(void);
+#include "utlist.h"
 
-static int send_data_ipc_registered = 0;
+struct file {
+	char *path;
+	unsigned int read :1;
+	struct file *prev;
+	struct file *next;
+};
+
+static pthread_mutex_t m = PTHREAD_MUTEX_INITIALIZER;
+static struct file *files = NULL;
+
+static void
+ipc(void)
+{
+	struct file *f;
+	struct sockaddr_un saun;
+	char *path;
+	char *child_id;
+	FILE *fp;
+	int fd;
+
+	if ((path = getenv("YAM_IPC")) == NULL) {
+		fprintf(stderr, "no YAM_IPC env var\n");
+		exit(1);
+	}
+
+	if ((child_id = getenv("YAM_CHILD_ID")) == NULL) {
+		fprintf(stderr, "no YAM_CHILD_ID env var\n");
+		exit(1);
+	}
+
+	if ((fd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
+		perror("socket()");
+		exit(1);
+	}
+
+	saun.sun_family = AF_UNIX;
+	strlcpy(saun.sun_path, path, sizeof(saun.sun_path));
+
+	if (connect(fd, (struct sockaddr *)&saun, sizeof(struct sockaddr_un)) < 0) {
+		perror("connect()");
+		exit(1);
+	}
+
+	fp = fdopen(fd, "r+");
+
+	fprintf(fp, "%s\n", child_id);
+	for (f = files; f != NULL; f = f->next)
+		fprintf(fp, "%d %s\n", f->read, f->path);
+
+	fclose(fp);
+}
+
+static void
+register_ipc(void)
+{
+	static int done;
+	if (done == 0) {
+		atexit(ipc);
+		done = 1;
+	}
+}
+
+static void
+add_file(const char *path, unsigned int read)
+{
+	struct file *f;
+
+	f = calloc(1, sizeof(struct file));
+	f->path = realpath(path, NULL);
+	f->read = read;
+	LL_PREPEND(files, f);
+}
 
 FILE *
 fopen(const char *path, const char *mode)
@@ -15,20 +92,22 @@ fopen(const char *path, const char *mode)
 	static FILE * (*func)(const char *, const char *);
 	FILE *fp;
 
-	if (send_data_ipc_registered == 0) {
-		send_data_ipc_registered = 1;
-		atexit(send_data_ipc);
-	}
+	pthread_mutex_lock(&m);
+	register_ipc();
 
 	if (func == NULL)
 		func = dlsym(RTLD_NEXT, "fopen");
 
 	fp = func(path, mode);
 
-	if (fp != NULL && mode[0] == 'r') {
-		printf("fopen: %s (%s)\n", path, mode);
+	if (fp != NULL) {
+		if (mode[0] == 'r')
+			add_file(path, 1);
+		else
+			add_file(path, 0);
 	}
 
+	pthread_mutex_unlock(&m);
 	return fp;
 }
 
@@ -40,10 +119,8 @@ open(const char *path, int flags, ...)
 	int mode;
 	va_list list;
 
-	if (send_data_ipc_registered == 0) {
-		send_data_ipc_registered = 1;
-		atexit(send_data_ipc);
-	}
+	pthread_mutex_lock(&m);
+	register_ipc();
 
 	if (func == NULL)
 		func = dlsym(RTLD_NEXT, "open");
@@ -57,16 +134,14 @@ open(const char *path, int flags, ...)
 	} else
 		fd = func(path, flags);
 
-	if (fd > 0 && ((flags & O_RDONLY) == O_RDONLY || (flags & O_RDWR) == O_RDWR) &&
-		(flags & O_CREAT) != O_CREAT && (flags & O_TRUNC) != O_TRUNC) {
-		printf("open: %d -> %s\n", fd, path);
+	if (fd > 0) {
+		if (((flags & O_RDONLY) == O_RDONLY || (flags & O_RDWR) == O_RDWR) &&
+		(flags & O_CREAT) != O_CREAT && (flags & O_TRUNC) != O_TRUNC)
+			add_file(path, 1);
+		else
+			add_file(path, 0);
 	}
 
+	pthread_mutex_unlock(&m);
 	return fd;
-}
-
-void
-send_data_ipc(void)
-{
-	/* TODO */
 }
