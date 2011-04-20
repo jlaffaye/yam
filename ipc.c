@@ -36,16 +36,16 @@ ipc_listen(int num_clients)
 	path = mktemp(template);
 
 	if ((fd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0)
-		err(1, "socket()");
+		die("socket()");
 
 	saun.sun_family = AF_UNIX;
 	strlcpy(saun.sun_path, path, sizeof(saun.sun_path));
 
 	if (bind(fd, (struct sockaddr *)&saun, sizeof(struct sockaddr_un)) < 0)
-		err(1, "bind()");
+		die("bind()");
 
 	if (listen(fd, num_clients) < 0)
-		err(1, "liten()");
+		die("liten()");
 
 	setenv("YAM_IPC", path, 1);
 	/* FIXME */
@@ -68,10 +68,10 @@ ipc_accept(int fd)
 	int c;
 
 	if ((c = accept(fd, NULL, NULL)) < 0)
-		err(1, "accept()");
+		die("accept()");
 
 	if ((fp = fdopen(c, "r")) == NULL)
-		err(1, "fdopen()");
+		die("fdopen()");
 
 	return fp;
 }

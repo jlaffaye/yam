@@ -39,7 +39,7 @@ main(int argc, char **argv)
 			case 'j':
 				num_proc = (int)strtol(optarg, (char **)NULL, 10);
 				if (num_proc == 0)
-					warnx("wrong -j arg `%s'", optarg);
+					fprintf(stderr, "wrong -j arg `%s'", optarg);
 				break;
 		}
 	}

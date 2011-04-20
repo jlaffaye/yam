@@ -17,9 +17,7 @@
 #ifndef _ERR_H
 #define _ERR_H
 
-void err(int code, const char *fmt, ...);
 void die(const char *fmt, ...);
-void warn(const char *fmt, ...);
-void warnx(const char *fmt, ...);
+void diex(const char *fmt, ...);
 
 #endif

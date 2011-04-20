@@ -68,7 +68,7 @@ start_job(struct state *s)
 	pi = &s->pi[i];
 	n = s->jobs;
 	if ((pi->pid = popen2(n->cmd, i, &pi->fd)) < 0) {
-		warn("popen2()");
+		perror("popen2()");
 		return 1;
 	}
 
@@ -125,7 +125,7 @@ read_pipe(struct state *s, int i)
 	char buf[8192];
 
 	if ((sz = read(s->pi[i].fd, buf, sizeof(buf))) < 0) {
-		warn("read()");
+		perror("read()");
 		finish_job(s, i);
 		return 1;
 	}
@@ -167,7 +167,7 @@ ipc(struct state *s)
 		}
 	}
 	if (ferror(fp))
-		warn("getline()");
+		perror("getline()");
 	fclose(fp);
 
 	return 0;
@@ -212,7 +212,7 @@ do_jobs(int num_proc)
 
 		/* poll running jobs + unix socket */
 		if (poll(s.pfd, num_proc + 1, -1) < 0)
-			err(1, "poll()");
+			die("poll()");
 
 		/* special case for the unix socket */
 		if (s.pfd[0].revents & POLLIN) {
