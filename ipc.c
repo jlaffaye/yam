@@ -26,7 +26,7 @@
 #include "ipc.h"
 
 int
-ipc_listen(void)
+ipc_listen(int num_clients)
 {
 	struct sockaddr_un saun;
 	char template[] = "/tmp/yam-socket.XXXXXX";
@@ -44,7 +44,7 @@ ipc_listen(void)
 	if (bind(fd, (struct sockaddr *)&saun, sizeof(struct sockaddr_un)) < 0)
 		err(1, "bind()");
 
-	if (listen(fd, 1) < 0)
+	if (listen(fd, num_clients) < 0)
 		err(1, "liten()");
 
 	setenv("YAM_IPC", path, 1);

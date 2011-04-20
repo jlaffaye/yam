@@ -19,7 +19,7 @@
 
 #include <stdio.h>
 
-int ipc_listen(void);
+int ipc_listen(int num_clients);
 void ipc_close(int fd);
 FILE * ipc_accept(int fd);
 

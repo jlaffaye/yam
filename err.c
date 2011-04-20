@@ -30,6 +30,8 @@ err(int code, const char *fmt, ...)
 	vfprintf(stderr, fmt, ap);
 	va_end(ap);
 
+	fprintf(stderr, ": %s\n", strerror(errno));
+
 	exit(code);
 }
 

@@ -60,10 +60,10 @@ start_job(struct state *s)
 
 	/* find the first empty slot */
 	for (i = 0; i < s->num_proc; i++)
-		if (s->pfd[i].fd == -1)
+		if (s->pi[i].fd == -1)
 			break;
 	assert(i < s->num_proc);
-	assert(s->pfd[i].fd == -1);
+	assert(s->pi[i].fd == -1);
 
 	pi = &s->pi[i];
 	n = s->jobs;
@@ -72,7 +72,7 @@ start_job(struct state *s)
 		return 1;
 	}
 
-	s->pfd[i].fd = pi->fd;
+	s->pfd[i + 1].fd = pi->fd;
 	pi->node = n;
 	s->num_active++;
 
@@ -93,7 +93,7 @@ finish_job(struct state *s, int i)
 	pi->retcode = pclose2(pi->pid, pi->fd);
 
 	pi->pid = -1;
-	pi->fd = s->pfd[i].fd = -1;
+	pi->fd = s->pfd[i + 1].fd = -1;
 	s->num_active--;
 
 	if (pi->retcode != 0)
@@ -124,7 +124,7 @@ read_pipe(struct state *s, int i)
 	ssize_t sz;
 	char buf[8192];
 
-	if ((sz = read(s->pfd[i].fd, buf, sizeof(buf))) < 0) {
+	if ((sz = read(s->pi[i].fd, buf, sizeof(buf))) < 0) {
 		warn("read()");
 		finish_job(s, i);
 		return 1;
@@ -154,7 +154,7 @@ ipc(struct state *s)
 	int child_id = -1;
 	struct node *n;
 
-	fp = ipc_accept(s->pfd[s->num_proc].fd);
+	fp = ipc_accept(s->pfd[0].fd);
 
 	while ((len = getline(&line, &cap, fp)) > 0) {
 		if (line[len - 1] == '\n')
@@ -166,8 +166,10 @@ ipc(struct state *s)
 		} else {
 		}
 	}
-
+	if (ferror(fp))
+		warn("getline()");
 	fclose(fp);
+
 	return 0;
 }
 
@@ -182,6 +184,8 @@ do_jobs(int num_proc)
 	s.num_jobs = graph_compute(&s.jobs);
 
 	s.pi = calloc(num_proc, sizeof(struct proc_info));
+	for (i = 0; i < num_proc; i++)
+		s.pi[i].fd = -1;
 
 	/* `num_proc' pipes + 1 unix socket*/
 	s.pfd = malloc((s.num_proc + 1) * sizeof(struct pollfd));
@@ -190,7 +194,7 @@ do_jobs(int num_proc)
 		s.pfd[i].events = POLLIN;
 	}
 
-	s.pfd[s.num_proc].fd = ipc_listen();
+	s.pfd[0].fd = ipc_listen(num_proc);
 
 	/*
 	 * Iterate as long as there are jobs to do/being done.
@@ -210,13 +214,16 @@ do_jobs(int num_proc)
 		if (poll(s.pfd, num_proc + 1, -1) < 0)
 			err(1, "poll()");
 
-		for (i = 0; i < num_proc; i++)
-			if (s.pfd[i].revents & POLLIN)
-				error += read_pipe(&s, i);
-
 		/* special case for the unix socket */
-		if (s.pfd[num_proc].revents & POLLIN)
-			ipc(&s);
+		if (s.pfd[0].revents & POLLIN) {
+			do {
+				ipc(&s);
+			} while (poll(s.pfd, 1, 0) > 0);
+		}
+
+		for (i = 1; i <= num_proc; i++)
+			if (s.pfd[i].revents & POLLIN)
+				error += read_pipe(&s, i - 1);
 	}
 
 	/*
@@ -225,15 +232,16 @@ do_jobs(int num_proc)
 	for (i = 0; i < num_proc; i++) {
 		pi = &s.pi[i];
 		if (pi->retcode != 0) {
-			fprintf(stderr, "%s\n%s\n", pi->node->cmd,
-					utstring_body(pi->output));
+			fprintf(stderr, "%s\n", pi->node->cmd);
+			if (pi->output != NULL)
+				fprintf(stderr, "%s\n", utstring_body(pi->output));
 			fprintf(stderr, "*** Error code %d\n\n", pi->retcode);
 		}
 		if (pi->output != NULL)
 			utstring_free(pi->output);
 	}
 
-	ipc_close(s.pfd[s.num_proc].fd);
+	ipc_close(s.pfd[0].fd);
 	free(s.pfd);
 	free(s.pi);
 	return error;
