@@ -38,6 +38,7 @@ ipc_listen(int num_clients)
 	if ((fd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0)
 		die("socket()");
 
+	bzero(&saun, sizeof(struct sockaddr_un));
 	saun.sun_family = AF_UNIX;
 	strlcpy(saun.sun_path, path, sizeof(saun.sun_path));
 
