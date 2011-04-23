@@ -40,7 +40,7 @@ ipc_listen(int num_clients)
 
 	bzero(&saun, sizeof(struct sockaddr_un));
 	saun.sun_family = AF_UNIX;
-	strlcpy(saun.sun_path, path, sizeof(saun.sun_path));
+	strcpy(saun.sun_path, path);
 
 	if (bind(fd, (struct sockaddr *)&saun, sizeof(struct sockaddr_un)) < 0)
 		die("bind()");

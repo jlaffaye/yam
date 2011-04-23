@@ -1,3 +1,4 @@
+#define _GNU_SOURCE /* required for dlfcn.h with glibc */`
 #include <sys/param.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -48,8 +49,9 @@ ipc(void)
 		exit(1);
 	}
 
+	bzero(&saun, sizeof(struct sockaddr_un));
 	saun.sun_family = AF_UNIX;
-	strlcpy(saun.sun_path, path, sizeof(saun.sun_path));
+	strcpy(saun.sun_path, path);
 
 	if (connect(fd, (struct sockaddr *)&saun, sizeof(struct sockaddr_un)) < 0) {
 		perror("connect()");

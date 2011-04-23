@@ -7,10 +7,18 @@ SRCS=		do.c		\
 		subprocess.c 	\
 		yamfile.c
 
+OPSYS!=		uname
+.if ${OPSYS} == "FreeBSD"
+CFLAGS+=	-DFREEBSD
+CFLAGS+=	`pkg-config --cflags lua-5.1`
+LDFLAGS+=	`pkg-config --libs lua-5.1`
 WARNS=		3
-
-CFLAGS+=	-I/usr/local/include/lua51
-LDFLAGS+=	-L/usr/local/lib/lua51 -lm -llua
+.elif ${OPSYS} == "Linux"
+CFLAGS+=	-DLINUX
+CFLAGS+=	`pkg-config --cflags lua5.1`
+LDFLAGS+=	`pkg-config --libs lua5.1`
+WARNS=		0
+.endif
 
 NO_MAN=		yes
 BINDIR=		/usr/local/bin

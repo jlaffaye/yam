@@ -131,7 +131,8 @@ read_pipe(struct state *s, int i)
 	}
 
 	/*
-	 * If `sz' is 0, this is EOF so the process is terminated
+	 * Some systems return POLLIN when the pipe is closed, and the application
+	 * has to check for EOF on the fd.
 	 */
 	if (sz == 0)
 		return finish_job(s, i);
@@ -222,7 +223,9 @@ do_jobs(int num_proc)
 		}
 
 		for (i = 1; i <= num_proc; i++)
-			if (s.pfd[i].revents & POLLIN)
+			if (s.pfd[i].revents & POLLHUP)
+				error += finish_job(&s, i - 1);
+			else if (s.pfd[i].revents & POLLIN)
 				error += read_pipe(&s, i - 1);
 	}
 
