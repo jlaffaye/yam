@@ -14,6 +14,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -24,15 +25,39 @@
 #include "subprocess.h"
 #include "yamfile.h"
 
+static void
+clean(struct graph *g)
+{
+	struct node *n;
+
+	for (n = g->index; n != NULL; n = n->hh.next) {
+		/* Skip non jobs */
+		if (n->childs.len == 0)
+			continue;
+		if (unlink(n->name) != 0) {
+			if (errno != ENOENT && errno != ENOTDIR) {
+				perrorf("unlink(%s)", n->name);
+			}
+		} else {
+			printf("RM\t%s\n", n->name);
+		}
+	}
+}
+
 int
 main(int argc, char **argv)
 {
+	struct graph g;
 	int num_proc = 1;
+	int cflag = 0;
 	int gflag = 0;
 	int ch;
 
-	while ((ch = getopt(argc, argv, "gj:")) != -1) {
+	while ((ch = getopt(argc, argv, "cgj:")) != -1) {
 		switch(ch) {
+			case 'c':
+				cflag = 1;
+				break;
 			case 'g':
 				gflag = 1;
 				break;
@@ -46,15 +71,17 @@ main(int argc, char **argv)
 	argc -= optind;
 	argv += optind;
 
-	graph_init();
-	yamfile();
+	graph_init(&g);
+	yamfile(&g);
 
-	if (gflag == 1)
-		dump_graphviz(stdout);
+	if (cflag == 1)
+		clean(&g);
+	else if (gflag == 1)
+		dump_graphviz(&g, stdout);
 	else
-		do_jobs(num_proc);
+		do_jobs(&g, num_proc);
 
-	graph_free();
+	graph_free(&g);
 
 	return 0;
 }

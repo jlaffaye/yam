@@ -17,6 +17,7 @@
 #ifndef _ERR_H
 #define _ERR_H
 
+void perrorf(const char *fmt, ...);
 void die(const char *fmt, ...);
 void diex(const char *fmt, ...);
 

@@ -31,6 +31,10 @@ struct jobs {
 	struct node *tail;
 };
 
+struct graph {
+	struct node *index;
+};
+
 struct nodes {
 	struct node **nodes;
 	size_t cap;
@@ -69,13 +73,13 @@ struct node {
 	UT_hash_handle hh;
 };
 
-void graph_init(void);
-void graph_free(void);
-struct node * graph_get(const char *key);
-void graph_add_dep(struct node *n, const char *name);
+void graph_init(struct graph *g);
+void graph_free(struct graph *g);
+struct node * graph_get(struct graph *g, const char *key);
+void graph_add_dep(struct graph *g, struct node *n, const char *name);
 
-unsigned int graph_compute(struct node **jobs);
+unsigned int graph_compute(struct graph *g, struct node **jobs);
 
-void dump_graphviz(FILE *out);
+void dump_graphviz(struct graph *g, FILE *out);
 
 #endif

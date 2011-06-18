@@ -17,6 +17,8 @@
 #ifndef _DO_H
 #define _DO_H
 
-int do_jobs(int num_proc);
+struct graph;
+
+int do_jobs(struct graph *g, int num_proc);
 
 #endif

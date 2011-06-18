@@ -175,14 +175,14 @@ ipc(struct state *s)
 }
 
 int
-do_jobs(int num_proc)
+do_jobs(struct graph *g, int num_proc)
 {
 	struct state s = { NULL, 0, 0, num_proc, 0, NULL, NULL};
 	struct proc_info *pi;
 	int i;
 	int error = 0;
 
-	s.num_jobs = graph_compute(&s.jobs);
+	s.num_jobs = graph_compute(g, &s.jobs);
 
 	s.pi = calloc(num_proc, sizeof(struct proc_info));
 	for (i = 0; i < num_proc; i++)

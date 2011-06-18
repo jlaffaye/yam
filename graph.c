@@ -24,10 +24,6 @@
 
 #include "graph.h"
 
-static struct graph {
-	struct node *index;
-} g;
-
 static void
 nodes_add(struct nodes *ns, struct node *n)
 {
@@ -106,18 +102,18 @@ node_compute(struct node *n)
 }
 
 void
-graph_init(void)
+graph_init(struct graph *g)
 {
-	g.index = NULL;
+	g->index = NULL;
 }
 
 void
-graph_free(void)
+graph_free(struct graph *g)
 {
 	struct node *n, *tmp;
 
-	HASH_ITER(hh, g.index, n, tmp) {
-		HASH_DEL(g.index, n);
+	HASH_ITER(hh, g->index, n, tmp) {
+		HASH_DEL(g->index, n);
 		free(n->name);
 		free(n->cmd);
 		free(n->childs.nodes);
@@ -127,42 +123,42 @@ graph_free(void)
 }
 
 struct node *
-graph_get(const char *key)
+graph_get(struct graph *g, const char *key)
 {
 	struct node *n;
 	char *name;
 
 	name = (char *)key;
 
-	HASH_FIND_STR(g.index, name, n);
+	HASH_FIND_STR(g->index, name, n);
 	if (n == NULL) {
 		n = calloc(1, sizeof(struct node));
 		n->name = strdup(name);
-		HASH_ADD_KEYPTR(hh, g.index, n->name, strlen(n->name), n);
+		HASH_ADD_KEYPTR(hh, g->index, n->name, strlen(n->name), n);
 	}
 	return n;
 }
 
 void
-graph_add_dep(struct node *n, const char *name)
+graph_add_dep(struct graph *g, struct node *n, const char *name)
 {
 	struct node *dep;
 
-	dep = graph_get(name);
+	dep = graph_get(g, name);
 
 	nodes_add(&n->childs, dep);
 	nodes_add(&dep->parents, n);
 }
 
 unsigned int
-graph_compute(struct node **jobs)
+graph_compute(struct graph *g, struct node **jobs)
 {
 	struct node *n;
 	unsigned int nb = 0;
 
 	*jobs = NULL;
 
-	for (n = g.index; n != NULL; n = n->hh.next) {
+	for (n = g->index; n != NULL; n = n->hh.next) {
 		if (n->todo != 0)
 			continue;
 
@@ -177,7 +173,7 @@ graph_compute(struct node **jobs)
 }
 
 void
-dump_graphviz(FILE *out)
+dump_graphviz(struct graph *g, FILE *out)
 {
 	struct node *n;
 	size_t i;
@@ -186,7 +182,7 @@ dump_graphviz(FILE *out)
 	fprintf(out, "node [fontsize=10, shape=box, height=0.25]\n");
 	fprintf(out, "edge [fontsize=10]\n");
 
-	for (n = g.index; n != NULL; n = n->hh.next) {
+	for (n = g->index; n != NULL; n = n->hh.next) {
 		fprintf(out, "\"%p\" [label=\"%s\"];\n", n, n->name);
 		if (n->childs.len == 1) {
 			fprintf(out, "\"%p\" -> \"%p\" [label=\" %s\"];\n",
