@@ -30,6 +30,7 @@
 #include "do.h"
 #include "graph.h"
 #include "ipc.h"
+#include "log.h"
 #include "subprocess.h"
 #include "yamfile.h"
 
@@ -39,6 +40,7 @@ struct proc_info {
 	int retcode;
 	UT_string *output;
 	struct node *node;
+	struct file *files;
 };
 
 struct state {
@@ -49,6 +51,14 @@ struct state {
 	int num_active;
 	struct proc_info *pi;
 	struct pollfd *pfd;
+	const char *root;
+	FILE *log;
+};
+
+struct file {
+	char *path;
+	unsigned char mode;
+	struct file *next;
 };
 
 static int
@@ -88,6 +98,7 @@ finish_job(struct state *s, int i)
 	struct proc_info *pi = &s->pi[i];
 	struct node *n;
 	struct node *np;
+	struct file *f;
 	size_t j;
 
 	pi->retcode = pclose2(pi->pid, pi->fd);
@@ -110,10 +121,26 @@ finish_job(struct state *s, int i)
 			DL_APPEND(s->jobs, np);
 	}
 
+	/*
+	 * Add an entry to the log
+	 */
+	fprintf(s->log, "%s\n%s\n", n->name, n->cmd);
+	LL_FOREACH(pi->files, f) {
+		if (f->mode == 'r')
+			fprintf(s->log, "%s\n", f->path);
+	}
+	fprintf(s->log, "\n");
+
 	s->num_done++;
 	pi->node = NULL;
 	if (pi->output != NULL)
 		utstring_clear(pi->output);
+	while (pi->files != NULL) {
+		f = pi->files;
+		LL_DELETE(pi->files, f);
+		free(f->path);
+		free(f);
+	}
 
 	return 0;
 }
@@ -154,6 +181,9 @@ ipc(struct state *s)
 	ssize_t len;
 	int child_id = -1;
 	struct node *n;
+	struct file *f;
+	unsigned char mode;
+	char *path;
 
 	fp = ipc_accept(s->pfd[0].fd);
 
@@ -165,19 +195,43 @@ ipc(struct state *s)
 			child_id = (int)strtol(line, NULL, 10);
 			n = s->pi[child_id].node;
 		} else {
+			mode = line[0];
+			assert(mode == 'r' || mode == 'w');
+			path = line + 2;
+
+			/* ignore if outside root */
+			if (strncmp(path, s->root, strlen(s->root)) != 0)
+				continue;
+
+			/* find if this file is in the list */
+			for (f = s->pi[child_id].files; f != NULL; f = f->next)
+				if (strcmp(f->path, path) == 0)
+					break;
+
+			if (f != NULL) {
+				if (mode != 'r')
+					f->mode = mode;
+				continue;
+			}
+
+			f = calloc(1, sizeof(struct file));
+			f->path = strdup(path);
+			f->mode = mode;
+			LL_PREPEND(s->pi[child_id].files, f);
 		}
 	}
 	if (ferror(fp))
 		perror("getline()");
 	fclose(fp);
+	free(line);
 
 	return 0;
 }
 
 int
-do_jobs(struct graph *g, int num_proc)
+do_jobs(struct graph *g, int num_proc, char *root)
 {
-	struct state s = { NULL, 0, 0, num_proc, 0, NULL, NULL};
+	struct state s = { NULL, 0, 0, num_proc, 0, NULL, NULL, root, NULL};
 	struct proc_info *pi;
 	int i;
 	int error = 0;
@@ -194,6 +248,10 @@ do_jobs(struct graph *g, int num_proc)
 		s.pfd[i].fd = -1;
 		s.pfd[i].events = POLLIN;
 	}
+
+	s.log = log_open(root);
+	if (s.log == NULL)
+		die("can not open log file for writing");
 
 	s.pfd[0].fd = ipc_listen(num_proc);
 
@@ -245,6 +303,7 @@ do_jobs(struct graph *g, int num_proc)
 	}
 
 	ipc_close(s.pfd[0].fd);
+	log_close(s.log, root);
 	free(s.pfd);
 	free(s.pi);
 	return error;

@@ -14,11 +14,42 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#ifndef _DO_H
-#define _DO_H
+#include <sys/param.h>
 
-struct graph;
+#include <stdio.h>
+#include <unistd.h>
 
-int do_jobs(struct graph *g, int num_proc, char *root);
+#include "log.h"
 
-#endif
+#define LOG_FILETEMP ".yam.log.temp"
+#define LOG_FILE ".yam.log"
+#define LOG_EOF "-- YAM LOG EOF --"
+
+FILE *
+log_open(const char *dir)
+{
+	char path[MAXPATHLEN];
+
+	snprintf(path, sizeof(path), "%s/%s", dir, LOG_FILETEMP);
+
+	return fopen(path, "w");
+}
+
+int
+log_close(FILE *fp, const char *dir)
+{
+	char from[MAXPATHLEN];
+	char to[MAXPATHLEN];
+
+	snprintf(from, sizeof(from), "%s/%s", dir, LOG_FILETEMP);
+	snprintf(to, sizeof(to), "%s/%s", dir, LOG_FILE);
+
+	fprintf(fp, "%s\n", LOG_EOF);
+
+	fflush(fp);
+	fsync(fileno(fp));
+	fclose(fp);
+	rename(from, to);
+
+	return 0;
+}

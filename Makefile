@@ -3,6 +3,7 @@ SRCS=		do.c		\
 		err.c		\
 		graph.c 	\
 		ipc.c		\
+		log.c		\
 		main.c		\
 		subprocess.c 	\
 		yamfile.c

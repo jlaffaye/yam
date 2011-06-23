@@ -14,11 +14,10 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#ifndef _DO_H
-#define _DO_H
+#ifndef _LOG_H
+#define _LOG_H
 
-struct graph;
-
-int do_jobs(struct graph *g, int num_proc, char *root);
+FILE * log_open(const char *dir);
+int log_close(FILE *fp, const char *dir);
 
 #endif

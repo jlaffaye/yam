@@ -16,8 +16,7 @@
 
 struct file {
 	char *path;
-	unsigned int read :1;
-	struct file *prev;
+	unsigned char mode;
 	struct file *next;
 };
 
@@ -62,7 +61,7 @@ ipc(void)
 
 	fprintf(fp, "%s\n", child_id);
 	for (f = files; f != NULL; f = f->next)
-		fprintf(fp, "%d %s\n", f->read, f->path);
+		fprintf(fp, "%c %s\n", f->mode, f->path);
 
 	fclose(fp);
 }
@@ -78,13 +77,13 @@ register_ipc(void)
 }
 
 static void
-add_file(const char *path, unsigned int read)
+add_file(const char *path, unsigned char mode)
 {
 	struct file *f;
 
 	f = calloc(1, sizeof(struct file));
 	f->path = realpath(path, NULL);
-	f->read = read;
+	f->mode = mode;
 	LL_PREPEND(files, f);
 }
 
@@ -104,9 +103,9 @@ fopen(const char *path, const char *mode)
 
 	if (fp != NULL) {
 		if (mode[0] == 'r')
-			add_file(path, 1);
+			add_file(path, 'r');
 		else
-			add_file(path, 0);
+			add_file(path, 'w');
 	}
 
 	pthread_mutex_unlock(&m);
@@ -139,9 +138,9 @@ open(const char *path, int flags, ...)
 	if (fd > 0) {
 		if (((flags & O_RDONLY) == O_RDONLY || (flags & O_RDWR) == O_RDWR) &&
 		(flags & O_CREAT) != O_CREAT && (flags & O_TRUNC) != O_TRUNC)
-			add_file(path, 1);
+			add_file(path, 'r');
 		else
-			add_file(path, 0);
+			add_file(path, 'w');
 	}
 
 	pthread_mutex_unlock(&m);

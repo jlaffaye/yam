@@ -14,6 +14,8 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#include <sys/param.h>
+
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -32,7 +34,7 @@ clean(struct graph *g)
 
 	for (n = g->index; n != NULL; n = n->hh.next) {
 		/* Skip non jobs */
-		if (n->childs.len == 0)
+		if (n->type != NODE_JOB)
 			continue;
 		if (unlink(n->name) != 0) {
 			if (errno != ENOENT && errno != ENOTDIR) {
@@ -44,10 +46,39 @@ clean(struct graph *g)
 	}
 }
 
+static int
+get_root(char *root, size_t len)
+{
+	char path[MAXPATHLEN];
+	char *slash = NULL;
+	int found = 1;
+
+	getcwd(root, len);
+
+	for (;;) {
+		snprintf(path, sizeof(path), "%s/Yamfile", root);
+		if (access(path, F_OK) != 0)
+			break;
+		else
+			found = 0;
+
+		if ((slash = strrchr(root, '/')) != NULL)
+			*slash = '\0';
+		else
+			break;
+	}
+
+	if (slash != NULL)
+		*slash = '/';
+
+	return found;
+}
+
 int
 main(int argc, char **argv)
 {
 	struct graph g;
+	char root[MAXPATHLEN];
 	int num_proc = 1;
 	int cflag = 0;
 	int gflag = 0;
@@ -71,6 +102,9 @@ main(int argc, char **argv)
 	argc -= optind;
 	argv += optind;
 
+	if( get_root(root, sizeof(root)) != 0)
+		die("can't find root");
+
 	graph_init(&g);
 	yamfile(&g);
 
@@ -79,7 +113,7 @@ main(int argc, char **argv)
 	else if (gflag == 1)
 		dump_graphviz(&g, stdout);
 	else
-		do_jobs(&g, num_proc);
+		do_jobs(&g, num_proc, root);
 
 	graph_free(&g);
 
