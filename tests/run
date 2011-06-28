@@ -1,0 +1,93 @@
+#!/usr/bin/env python
+
+import os
+import subprocess
+import traceback
+
+def write_c(i):
+	name = str(i) + '.c'
+	f = open(name, 'w')
+	f.write('#include "base.h"\n')
+	f.write('#include "%d.h"\n' % i);
+	f.write('int get%d(void) { return BASE_NUM + NUM_%d; }\n' % (i, i))
+	f.close()
+
+def write_h(i, j):
+	name = str(i) + '.h'
+	f = open(name, "w")
+	f.write('#define NUM_%d %d\n' % (i, j))
+	f.write('int get%d(void);\n' % i)
+	f.close()
+
+def write_base_h(i):
+	f = open('base.h', 'w')
+	f.write('#define BASE_NUM %d\n' % i)
+	f.close()
+
+def write_main():
+	func = []
+	f = open('main.c', 'w')
+	f.write('#include <stdio.h>\n\n')
+	for i in range(num):
+		func.append('get%d()' % i)
+		f.write('#include "%d.h"\n' % i)
+	f.write('int main(void) {\n')
+	f.write('printf("%d", ' + '+\n'.join(func) + ');\n')
+	f.write('return 0;')
+	f.write('}\n')
+	f.close()
+
+def write_yamfile():
+	dep = ['"main.o"']
+	files = 'main.o'
+	f = open('Yamfile', 'w')
+	f.write('add_target("main.o", "gcc45 -c main.c -o main.o", {"main.c"})\n')
+	for i in range(num):
+		dep.append('"%d.o"' % i)
+		files += ' %d.o' % i
+		f.write('add_target("%d.o", "gcc45 -c %d.c -o %d.o", {"%d.c"})\n' % (i, i, i ,i))
+	f.write('add_target("test", "gcc45 -o test %s", {%s})' % (files, ', '.join(dep)))
+	f.close()
+
+def  write_makefile():
+	f = open('Makefile',  'w')
+	f.write('PROG=test\n')
+	f.write('SRCS=main.c')
+	for i in range(num):
+		f.write(' %d.c' % i)
+	f.write('\nNO_MAN=true\n')
+	f.write('.include <bsd.prog.mk>\n')
+	f.close()
+
+def test(expected):
+	os.system('yam')
+	p = subprocess.Popen('./test', shell=True, stdout=subprocess.PIPE)
+	(out, _) = p.communicate()
+	if not out == expected:
+		print 'FAIL: %s instead of %s' % (out, expected)
+		traceback.print_stack()
+	else:
+		print 'PASS'
+
+num = 100
+
+write_yamfile()
+write_makefile()
+write_main()
+write_base_h(0)
+
+total = 0
+for i in range(num):
+	write_c(i)
+	write_h(i, i)
+	total += i
+
+test(str(total))
+
+write_h(0, 1)
+total += 1
+test(str(total))
+
+write_base_h(1)
+total += num
+test(str(total))
