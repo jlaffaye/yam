@@ -17,7 +17,14 @@
 #ifndef _LOG_H
 #define _LOG_H
 
+struct graph;
+
 FILE * log_open(const char *dir);
+int log_entry_start(FILE *log, const char *name, const char *cmd);
+int log_entry_dep(FILE *log, const char *path);
+int log_entry_finish(FILE *log);
 int log_close(FILE *fp, const char *dir);
+
+int log_load(const char *dir, struct graph *g);
 
 #endif

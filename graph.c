@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "log.h"
 #include "graph.h"
 
 static void
@@ -49,6 +50,7 @@ node_mark_todo(struct node *n)
 	 * than needed!
 	 */
 	assert(n->todo != 1);
+	assert(n->type == NODE_JOB);
 
 	n->todo = 1;
 
@@ -81,9 +83,13 @@ node_compute(struct node *n)
 	size_t i;
 	unsigned int nb = 0;
 
+	assert(n->type == NODE_JOB);
+
 	/* depth first */
 	for (i = 0; i < n->childs.len; i++) {
-		nb += node_compute(n->childs.nodes[i]);
+		if (n->childs.nodes[i]->type == NODE_JOB) {
+			nb += node_compute(n->childs.nodes[i]);
+		}
 	}
 
 	if (n->todo != 0)
@@ -97,7 +103,6 @@ node_compute(struct node *n)
 			return node_mark_todo(n);
 	}
 
-	n->todo = -1;
 	return 0;
 }
 
@@ -140,11 +145,13 @@ graph_get(struct graph *g, const char *key)
 }
 
 void
-graph_add_dep(struct graph *g, struct node *n, const char *name)
+graph_add_dep(struct graph *g, struct node *n, const char *name, int type)
 {
 	struct node *dep;
 
 	dep = graph_get(g, name);
+	if (dep->type == NODE_UNKNOWN)
+		dep->type = type;
 
 	nodes_add(&n->childs, dep);
 	nodes_add(&dep->parents, n);
@@ -154,12 +161,13 @@ unsigned int
 graph_compute(struct graph *g, struct node **jobs)
 {
 	struct node *n;
+	struct node *tmp;
 	unsigned int nb = 0;
 
 	*jobs = NULL;
 
-	for (n = g->index; n != NULL; n = n->hh.next) {
-		if (n->todo != 0)
+	HASH_ITER(hh, g->index, n, tmp) {
+		if (n->todo != 0 || n->type != NODE_JOB)
 			continue;
 
 		nb += node_compute(n);
@@ -170,6 +178,29 @@ graph_compute(struct graph *g, struct node **jobs)
 	}
 
 	return nb;
+}
+
+int
+graph_dump_log(struct graph *g, FILE *log)
+{
+	struct node *n;
+	struct node *tmp;
+	struct node *dep;
+	size_t i;
+
+	HASH_ITER(hh, g->index, n, tmp) {
+		if (n->type == NODE_JOB && n->todo == 0) {
+			log_entry_start(log, n->name, n->cmd);
+			for (i = 0; i < n->childs.len; i++) {
+				dep = n->childs.nodes[i];
+				if (dep->type == NODE_DEP_IMPLICIT) {
+					log_entry_dep(log, dep->name);
+				}
+			}
+			log_entry_finish(log);
+		}
+	}
+	return 0;
 }
 
 void

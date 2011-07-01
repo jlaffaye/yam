@@ -22,9 +22,10 @@
 #include "uthash.h"
 #include "utlist.h"
 
-#define NODE_FILE 0
+#define NODE_UNKNOWN 0
 #define NODE_JOB 1
-#define NODE_DEP 2
+#define NODE_DEP_EXPLICIT 2
+#define NODE_DEP_IMPLICIT 3
 
 struct jobs {
 	struct node *head;
@@ -43,7 +44,7 @@ struct nodes {
 
 struct node {
 	unsigned int type :2;
-	int todo :2;
+	unsigned int todo :1;
 	char *name;
 	char *cmd;
 
@@ -76,9 +77,11 @@ struct node {
 void graph_init(struct graph *g);
 void graph_free(struct graph *g);
 struct node * graph_get(struct graph *g, const char *key);
-void graph_add_dep(struct graph *g, struct node *n, const char *name);
+void graph_add_dep(struct graph *g, struct node *n, const char *name, int type);
 
 unsigned int graph_compute(struct graph *g, struct node **jobs);
+
+int graph_dump_log(struct graph *g, FILE *log);
 
 void dump_graphviz(struct graph *g, FILE *out);
 

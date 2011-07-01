@@ -68,6 +68,8 @@ start_job(struct state *s)
 	struct node *n;
 	int i;
 
+	assert(s->jobs != NULL);
+
 	/* find the first empty slot */
 	for (i = 0; i < s->num_proc; i++)
 		if (s->pi[i].fd == -1)
@@ -77,6 +79,7 @@ start_job(struct state *s)
 
 	pi = &s->pi[i];
 	n = s->jobs;
+	assert(n->type == NODE_JOB);
 	if ((pi->pid = popen2(n->cmd, i, &pi->fd)) < 0) {
 		perror("popen2()");
 		return 1;
@@ -89,6 +92,7 @@ start_job(struct state *s)
 	DL_DELETE(s->jobs, n);
 
 	printf("[%d/%d] %s\n", s->num_done + s->num_active, s->num_jobs, n->name);
+
 	return 0;
 }
 
@@ -124,12 +128,12 @@ finish_job(struct state *s, int i)
 	/*
 	 * Add an entry to the log
 	 */
-	fprintf(s->log, "%s\n%s\n", n->name, n->cmd);
+	log_entry_start(s->log, n->name, n->cmd);
 	LL_FOREACH(pi->files, f) {
 		if (f->mode == 'r')
-			fprintf(s->log, "%s\n", f->path);
+			log_entry_dep(s->log, f->path);
 	}
-	fprintf(s->log, "\n");
+	log_entry_finish(s->log);
 
 	s->num_done++;
 	pi->node = NULL;
@@ -236,6 +240,7 @@ do_jobs(struct graph *g, int num_proc, char *root)
 	int i;
 	int error = 0;
 
+	log_load(root, g);
 	s.num_jobs = graph_compute(g, &s.jobs);
 
 	s.pi = calloc(num_proc, sizeof(struct proc_info));
@@ -302,8 +307,13 @@ do_jobs(struct graph *g, int num_proc, char *root)
 			utstring_free(pi->output);
 	}
 
-	ipc_close(s.pfd[0].fd);
+	/*
+	 * Finalize and close the log file
+	 */
+	graph_dump_log(g, s.log);
 	log_close(s.log, root);
+
+	ipc_close(s.pfd[0].fd);
 	free(s.pfd);
 	free(s.pi);
 	return error;

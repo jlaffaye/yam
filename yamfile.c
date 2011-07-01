@@ -52,7 +52,7 @@ add_target(lua_State *L)
 			luaL_error(L, "add_target: the table shall only"
 				   " contain strings");
 
-		graph_add_dep(gg, n, lua_tostring(L, 4));
+		graph_add_dep(gg, n, lua_tostring(L, 4), NODE_DEP_EXPLICIT);
 
 		lua_pop(L, 1);
 	}
