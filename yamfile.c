@@ -14,6 +14,9 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#include <sys/param.h>
+#include <stdlib.h>
+
 #include <lua.h>
 #include <lualib.h>
 #include <lauxlib.h>
@@ -29,6 +32,7 @@ add_target(lua_State *L)
 {
 	int i;
 	int tlen;
+	char path[PATH_MAX];
 
 	struct node *n;
 
@@ -39,7 +43,8 @@ add_target(lua_State *L)
 	luaL_checktype(L, 2, LUA_TSTRING);
 	luaL_checktype(L, 3, LUA_TTABLE);
 
-	n = graph_get(gg, lua_tostring(L, 1));
+	realpath(lua_tostring(L, 1), path);
+	n = graph_get(gg, path);
 
 	n->cmd = strdup(lua_tostring(L, 2));
 	n->type = NODE_JOB;
@@ -52,7 +57,8 @@ add_target(lua_State *L)
 			luaL_error(L, "add_target: the table shall only"
 				   " contain strings");
 
-		graph_add_dep(gg, n, lua_tostring(L, 4), NODE_DEP_EXPLICIT);
+		realpath(lua_tostring(L, 4), path);
+		graph_add_dep(gg, n, path, NODE_DEP_EXPLICIT);
 
 		lua_pop(L, 1);
 	}

@@ -185,6 +185,8 @@ ipc(struct state *s)
 	ssize_t len;
 	int child_id = -1;
 	struct node *n;
+	struct node *dep;
+	int found = 0;
 	struct file *f;
 	unsigned char mode;
 	char *path;
@@ -205,6 +207,17 @@ ipc(struct state *s)
 
 			/* ignore if outside root */
 			if (strncmp(path, s->root, strlen(s->root)) != 0)
+				continue;
+
+			/* ignore if already an explicit dep */
+			for (size_t i = 0; i < n->childs.len; i++) {
+				dep = n->childs.nodes[i];
+				if (dep->type != NODE_DEP_IMPLICIT && strcmp(dep->name, path) == 0) {
+					found = 1;
+					break;
+				}
+			}
+			if (found == 1)
 				continue;
 
 			/* find if this file is in the list */
