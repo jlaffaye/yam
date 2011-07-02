@@ -45,6 +45,7 @@ struct nodes {
 struct node {
 	unsigned int type :2;
 	unsigned int todo :1;
+	unsigned int visited :1;
 	char *name;
 	char *cmd;
 

@@ -277,7 +277,7 @@ do_jobs(struct graph *g, int num_proc, char *root)
 	 * Iterate as long as there are jobs to do/being done.
 	 * If there is an error, we still want to wait for running jobs to finish.
 	 */
-	while (s.num_done != s.num_jobs && (error == 0 || s.num_active > 0)) {
+	while (s.jobs != NULL || s.num_active > 0) {
 		/*
 		 * Launch new jobs if we have empty slots and if we have pending jobs.
 		 * If there is an error, we do not want to launch new jobs.
@@ -303,6 +303,13 @@ do_jobs(struct graph *g, int num_proc, char *root)
 				error += finish_job(&s, i - 1);
 			else if (s.pfd[i].revents & POLLIN)
 				error += read_pipe(&s, i - 1);
+	}
+
+	/*
+	 * There is a cycle in the graph
+	 */
+	if (s.num_done != s.num_jobs) {
+		fprintf(stderr, "There is a cycle in the graph!\n");
 	}
 
 	/*

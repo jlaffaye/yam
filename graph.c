@@ -85,6 +85,15 @@ node_compute(struct node *n)
 
 	assert(n->type == NODE_JOB);
 
+	if (n->visited == 1) {
+		return 0;
+	}
+
+	/*
+	 * Mark it as visited early to avoid cycles
+	 */
+	n->visited = 1;
+
 	/* depth first */
 	for (i = 0; i < n->childs.len; i++) {
 		if (n->childs.nodes[i]->type == NODE_JOB) {
@@ -171,10 +180,11 @@ graph_compute(struct graph *g, struct node **jobs)
 			continue;
 
 		nb += node_compute(n);
+	}
 
-		if (n->todo == 1 && n->waiting == 0)
+	HASH_ITER(hh, g->index, n, tmp) {
+		if (n->type == NODE_JOB && n->todo == 1 && n->waiting == 0)
 			DL_APPEND(*jobs, n);
-
 	}
 
 	return nb;
