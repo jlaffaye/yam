@@ -2,3 +2,5 @@
 *.So
 *.so
 *.core
+tests/*
+yam
