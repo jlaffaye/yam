@@ -128,5 +128,6 @@ int log_load(const char *dir, struct graph *g);
 void perrorf(const char *fmt, ...);
 void die(const char *fmt, ...);
 void diex(const char *fmt, ...);
+void info(uint8_t level, const char *fmt, ...);
 
 #endif

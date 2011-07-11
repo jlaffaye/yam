@@ -57,3 +57,16 @@ diex(const char *fmt, ...)
 	fprintf(stderr, "\n");
 	exit(1);
 }
+
+void
+info(uint8_t level, const char *fmt, ...)
+{
+	va_list ap;
+
+	if (level < flags.verbose)
+		return;
+
+	va_start(ap, fmt);
+	vprintf(fmt, ap);
+	va_end(ap);
+}
