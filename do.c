@@ -256,6 +256,12 @@ do_jobs(struct graph *g, int num_proc, char *root)
 	log_load(root, g);
 	s.num_jobs = graph_compute(g, &s.jobs);
 
+	/*
+	 * Nothing to do, exit early
+	 */
+	if (s.num_jobs == 0)
+		return 0;
+
 	s.pi = calloc(num_proc, sizeof(struct proc_info));
 	for (i = 0; i < num_proc; i++)
 		s.pi[i].fd = -1;
