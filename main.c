@@ -19,13 +19,12 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <strings.h>
 #include <unistd.h>
 
-#include "do.h"
-#include "err.h"
-#include "graph.h"
-#include "subprocess.h"
-#include "yamfile.h"
+#include "yam.h"
+
+struct flags flags;
 
 static void
 clean(struct graph *g)
@@ -79,28 +78,36 @@ main(int argc, char **argv)
 {
 	struct graph g;
 	char root[MAXPATHLEN];
-	int num_proc = 1;
-	int cflag = 0;
-	int gflag = 0;
 	int ch;
 
-	while ((ch = getopt(argc, argv, "cgj:")) != -1) {
+	bzero(&flags, sizeof(struct flags));
+
+	while ((ch = getopt(argc, argv, "clgj:")) != -1) {
 		switch(ch) {
 			case 'c':
-				cflag = 1;
+				flags.clean = 1;
 				break;
 			case 'g':
-				gflag = 1;
+				flags.graphviz = 1;
 				break;
 			case 'j':
-				num_proc = (int)strtol(optarg, (char **)NULL, 10);
-				if (num_proc == 0)
+				flags.jobs = (int)strtol(optarg, (char **)NULL, 10);
+				if (flags.jobs == 0)
 					fprintf(stderr, "wrong -j arg `%s'", optarg);
+				break;
+			case 'l':
+				flags.lint = 1;
+				break;
+			case 'v':
+				flags.verbose++;
 				break;
 		}
 	}
 	argc -= optind;
 	argv += optind;
+
+	if (flags.jobs == 0)
+		flags.jobs = 1;
 
 	if( get_root(root, sizeof(root)) != 0)
 		die("can't find root");
@@ -108,12 +115,12 @@ main(int argc, char **argv)
 	graph_init(&g);
 	yamfile(&g);
 
-	if (cflag == 1)
+	if (flags.clean == 1)
 		clean(&g);
-	else if (gflag == 1)
+	else if (flags.graphviz == 1)
 		dump_graphviz(&g, stdout);
 	else
-		do_jobs(&g, num_proc, root);
+		do_jobs(&g, root);
 
 	graph_free(&g);
 

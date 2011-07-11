@@ -22,8 +22,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "log.h"
-#include "graph.h"
+#include "yam.h"
 
 static void
 nodes_add(struct nodes *ns, struct node *n)

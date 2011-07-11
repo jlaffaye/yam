@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "subprocess.h"
+#include "yam.h"
 
 pid_t
 popen2(const char *cmd, int child_id, int *fd)

@@ -21,8 +21,7 @@
 #include <lualib.h>
 #include <lauxlib.h>
 
-#include "graph.h"
-#include "yamfile.h"
+#include "yam.h"
 
 /* No `void *data' for Lua callback... */
 static struct graph *gg = NULL;

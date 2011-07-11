@@ -23,9 +23,7 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#include "err.h"
-#include "log.h"
-#include "graph.h"
+#include "yam.h"
 
 #define LOG_FILETEMP ".yam.log.temp"
 #define LOG_FILE ".yam.log"

@@ -14,13 +14,26 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#ifndef _GRAPH_H
-#define _GRAPH_H
+#ifndef _YAM_H
+#define _YAM_H
 
-#include <time.h>
+#include <stdint.h>
+#include <stdio.h> /* for FILE */
+#include <time.h> /* for time_t */
+#include <unistd.h> /* for pid_t */
 
-#include "uthash.h"
 #include "utlist.h"
+#include "uthash.h"
+
+struct flags {
+	unsigned int clean :1;
+	uint8_t verbose;
+	unsigned int lint :1;
+	unsigned int graphviz :1;
+	int jobs;
+};
+
+extern struct flags flags;
 
 #define NODE_UNKNOWN 0
 #define NODE_JOB 1
@@ -75,6 +88,7 @@ struct node {
 	UT_hash_handle hh;
 };
 
+/* graph */
 void graph_init(struct graph *g);
 void graph_free(struct graph *g);
 struct node * graph_get(struct graph *g, const char *key);
@@ -85,5 +99,34 @@ unsigned int graph_compute(struct graph *g, struct node **jobs);
 int graph_dump_log(struct graph *g, FILE *log);
 
 void dump_graphviz(struct graph *g, FILE *out);
+
+/* yamfile */
+void yamfile(struct graph *g);
+
+/* do */
+int do_jobs(struct graph *g, char *root);
+
+/* subprocess */
+pid_t popen2(const char *cmd, int child_id, int *fd);
+int pclose2(pid_t pid, int fd);
+
+/* ipc */
+int ipc_listen(int num_clients);
+void ipc_close(int fd);
+FILE * ipc_accept(int fd);
+
+/* log */
+FILE * log_open(const char *dir);
+int log_entry_start(FILE *log, const char *name, const char *cmd);
+int log_entry_dep(FILE *log, const char *path);
+int log_entry_finish(FILE *log);
+int log_close(FILE *fp, const char *dir);
+
+int log_load(const char *dir, struct graph *g);
+
+/* err */
+void perrorf(const char *fmt, ...);
+void die(const char *fmt, ...);
+void diex(const char *fmt, ...);
 
 #endif

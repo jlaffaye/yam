@@ -22,8 +22,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "err.h"
-#include "ipc.h"
+#include "yam.h"
 
 int
 ipc_listen(int num_clients)
