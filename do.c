@@ -186,7 +186,7 @@ ipc(struct state *s)
 	int child_id = -1;
 	struct node *n;
 	struct node *dep;
-	int found = 0;
+	int found;
 	struct file *f;
 	unsigned char mode;
 	char *path;
@@ -210,6 +210,7 @@ ipc(struct state *s)
 				continue;
 
 			/* ignore if already an explicit dep */
+			found = 0;
 			for (size_t i = 0; i < n->childs.len; i++) {
 				dep = n->childs.nodes[i];
 				if (dep->type != NODE_DEP_IMPLICIT && strcmp(dep->name, path) == 0) {
