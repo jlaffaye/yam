@@ -95,7 +95,7 @@ static void
 lint(struct state *s, struct proc_info *pi)
 {
 	struct file *f;
-	struct node *n_exist;
+	struct node *n;
 	struct node *dep = NULL;
 	int found;
 	size_t i;
@@ -105,8 +105,8 @@ lint(struct state *s, struct proc_info *pi)
 
 	LL_FOREACH(pi->files, f) {
 		if (f->mode == 'r' && f->explicit == 0) {
-			HASH_FIND_STR(s->graph->index, f->path, n_exist);
-			if (n_exist != NULL) {
+			HASH_FIND_STR(s->graph->index, f->path, n);
+			if (n != NULL && n->type != NODE_DEP_IMPLICIT) {
 				printf("%s should be an explicit dependency of %s\n",
 					   f->path, pi->node->name);
 			}
