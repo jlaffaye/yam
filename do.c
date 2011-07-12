@@ -38,6 +38,7 @@ struct proc_info {
 };
 
 struct state {
+	struct graph *graph;
 	struct node *jobs;
 	unsigned int num_jobs;
 	unsigned int num_done;
@@ -51,6 +52,7 @@ struct state {
 struct file {
 	char *path;
 	unsigned char mode;
+	unsigned int explicit :1;
 	struct file *next;
 };
 
@@ -89,6 +91,48 @@ start_job(struct state *s)
 	return 0;
 }
 
+static void
+lint(struct state *s, struct proc_info *pi)
+{
+	struct file *f;
+	struct node *n_exist;
+	struct node *dep = NULL;
+	int found;
+	size_t i;
+
+	if (pi->files == NULL)
+		return;
+
+	LL_FOREACH(pi->files, f) {
+		if (f->mode == 'r' && f->explicit == 0) {
+			HASH_FIND_STR(s->graph->index, f->path, n_exist);
+			if (n_exist != NULL) {
+				printf("%s should be an explicit dependency of %s\n",
+					   f->path, pi->node->name);
+			}
+		}
+	}
+
+	for (i = 0; i < pi->node->childs.len; i++) {
+		dep = pi->node->childs.nodes[i];
+
+		if (dep->type != NODE_DEP_EXPLICIT)
+			continue;
+		found = 0;
+		LL_FOREACH(pi->files, f) {
+			if (f->mode != 'r')
+				continue;
+			if (strcmp(f->path, dep->name) == 0) {
+				found = 1;
+				break;
+			}
+		}
+		if (found == 0)
+			printf("%s is not a dependency of %s and should be removed\n",
+				   dep->name, pi->node->name);
+	}
+}
+
 static int
 finish_job(struct state *s, int i)
 {
@@ -123,10 +167,13 @@ finish_job(struct state *s, int i)
 	 */
 	log_entry_start(s->log, n->name, n->cmd);
 	LL_FOREACH(pi->files, f) {
-		if (f->mode == 'r')
+		if (f->mode == 'r' && f->explicit == 0)
 			log_entry_dep(s->log, f->path);
 	}
 	log_entry_finish(s->log);
+
+	if (flags.lint == 1)
+		lint(s, pi);
 
 	s->num_done++;
 	pi->node = NULL;
@@ -179,7 +226,7 @@ ipc(struct state *s)
 	int child_id = -1;
 	struct node *n;
 	struct node *dep;
-	int found;
+	int explicit;
 	struct file *f;
 	unsigned char mode;
 	char *path;
@@ -203,15 +250,19 @@ ipc(struct state *s)
 				continue;
 
 			/* ignore if already an explicit dep */
-			found = 0;
+			explicit = 0;
 			for (size_t i = 0; i < n->childs.len; i++) {
 				dep = n->childs.nodes[i];
 				if (dep->type != NODE_DEP_IMPLICIT && strcmp(dep->name, path) == 0) {
-					found = 1;
+					explicit = 1;
 					break;
 				}
 			}
-			if (found == 1)
+			/*
+			 * if we are not in lint mode, we dont care about files which
+			 * refers to an explicit dependency.
+			 */
+			if (explicit == 1 && flags.lint == 0)
 				continue;
 
 			/* find if this file is in the list */
@@ -228,6 +279,7 @@ ipc(struct state *s)
 			f = calloc(1, sizeof(struct file));
 			f->path = strdup(path);
 			f->mode = mode;
+			f->explicit = explicit;
 			LL_PREPEND(s->pi[child_id].files, f);
 		}
 	}
@@ -242,7 +294,7 @@ ipc(struct state *s)
 int
 do_jobs(struct graph *g, char *root)
 {
-	struct state s = { NULL, 0, 0, 0, NULL, NULL, root, NULL};
+	struct state s = { g, NULL, 0, 0, 0, NULL, NULL, root, NULL};
 	struct proc_info *pi;
 	int i;
 	int error = 0;
