@@ -158,6 +158,16 @@ graph_add_dep(struct graph *g, struct node *n, const char *name, int type)
 	struct node *dep;
 
 	dep = graph_get(g, name);
+
+	/*
+	 * If an implicit dep point to a job, it should be an explicit one.
+	 * Do not add this one because it will confuse the user (and the lint
+	 * option) if the build succeed with a missing dependency.
+	 */
+	if (dep->type == NODE_JOB && type == NODE_DEP_IMPLICIT)
+		return;
+
+	/* Do not overwrite the type */
 	if (dep->type == NODE_UNKNOWN)
 		dep->type = type;
 
