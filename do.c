@@ -358,9 +358,10 @@ do_jobs(struct graph *g, char *root)
 	}
 
 	/*
-	 * There is a cycle in the graph
+	 * If we did not all the jobs and that's not because of an error,
+	 * there is a cycle in the graph.
 	 */
-	if (s.num_done != s.num_jobs) {
+	if (s.num_done != s.num_jobs && error == 0) {
 		fprintf(stderr, "There is a cycle in the graph!\n");
 	}
 
