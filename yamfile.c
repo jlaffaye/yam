@@ -24,14 +24,27 @@
 #include "yam.h"
 
 /* No `void *data' for Lua callback... */
-static struct graph *gg = NULL;
+static struct graph *_gg = NULL;
+static size_t _rootlen = 0;
+
+static char *
+get_path(const char *src, char *buf)
+{
+	char *p;
+
+	p = realpath(src, buf);
+	p += _rootlen + 1;
+
+	return p;
+}
 
 static int
 add_target(lua_State *L)
 {
 	int i;
 	int tlen;
-	char path[PATH_MAX];
+	char buf[PATH_MAX];
+	const char *path;
 
 	struct node *n;
 
@@ -42,8 +55,8 @@ add_target(lua_State *L)
 	luaL_checktype(L, 2, LUA_TSTRING);
 	luaL_checktype(L, 3, LUA_TTABLE);
 
-	realpath(lua_tostring(L, 1), path);
-	n = graph_get(gg, path);
+	path = get_path(lua_tostring(L, 1), buf);
+	n = graph_get(_gg, path);
 
 	n->cmd = strdup(lua_tostring(L, 2));
 	n->type = NODE_JOB;
@@ -56,8 +69,8 @@ add_target(lua_State *L)
 			luaL_error(L, "add_target: the table shall only"
 				   " contain strings");
 
-		realpath(lua_tostring(L, 4), path);
-		graph_add_dep(gg, n, path, NODE_DEP_EXPLICIT);
+		path = get_path(lua_tostring(L, 4), buf);
+		graph_add_dep(_gg, n, path, NODE_DEP_EXPLICIT);
 
 		lua_pop(L, 1);
 	}
@@ -66,7 +79,7 @@ add_target(lua_State *L)
 }
 
 void
-yamfile(struct graph *g)
+yamfile(struct graph *g, const char *root)
 {
 	lua_State *L;
 
@@ -74,11 +87,13 @@ yamfile(struct graph *g)
 	luaL_openlibs(L);
 	lua_register(L, "add_target", add_target);
 
-	gg = g;
+	_gg = g;
+	_rootlen = strlen(root);
 
 	if (luaL_dofile(L, "Yamfile") != 0)
 		printf("luaL_dofile(): %s\n", lua_tostring(L, -1));
 
-	gg = NULL;
+	_gg = NULL;
+	_rootlen = 0;
 	lua_close(L);
 }

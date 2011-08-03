@@ -113,7 +113,7 @@ main(int argc, char **argv)
 		die("can't find root");
 
 	graph_init(&g);
-	yamfile(&g);
+	yamfile(&g, root);
 
 	if (flags.clean == 1)
 		clean(&g);

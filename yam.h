@@ -101,7 +101,7 @@ int graph_dump_log(struct graph *g, FILE *log);
 void dump_graphviz(struct graph *g, FILE *out);
 
 /* yamfile */
-void yamfile(struct graph *g);
+void yamfile(struct graph *g, const char *root);
 
 /* do */
 int do_jobs(struct graph *g, char *root);

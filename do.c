@@ -223,6 +223,7 @@ ipc(struct state *s)
 	char *line = NULL;
 	size_t cap = 0;
 	ssize_t len;
+	size_t rootlen;
 	int child_id = -1;
 	struct node *n;
 	struct node *dep;
@@ -232,6 +233,8 @@ ipc(struct state *s)
 	char *path;
 
 	fp = ipc_accept(s->pfd[0].fd);
+
+	rootlen = strlen(s->root);
 
 	while ((len = getline(&line, &cap, fp)) > 0) {
 		if (line[len - 1] == '\n')
@@ -246,8 +249,11 @@ ipc(struct state *s)
 			path = line + 2;
 
 			/* ignore if outside root */
-			if (strncmp(path, s->root, strlen(s->root)) != 0)
+			if (strncmp(path, s->root, rootlen) != 0)
 				continue;
+
+			/* strip rootdir */
+			path += rootlen + 1;
 
 			/* ignore if already an explicit dep */
 			explicit = 0;
