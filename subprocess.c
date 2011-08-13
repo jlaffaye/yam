@@ -24,7 +24,7 @@
 #include "yam.h"
 
 pid_t
-popen2(const char *cmd, int child_id, int *fd)
+popen2(const char *cmd, const char *cwd, int child_id, int *fd)
 {
 	int fildes[2];
 	pid_t pid;
@@ -55,6 +55,9 @@ popen2(const char *cmd, int child_id, int *fd)
 
 		snprintf(e, sizeof(e), "YAM_CHILD_ID=%d", child_id);
 		putenv(e);
+
+		if (chdir(cwd) != 0)
+			die("chdir(%s)", cwd);
 
 		execl("/bin/sh", "sh", "-c", cmd, NULL);
 		perror("execl()");

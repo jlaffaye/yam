@@ -75,7 +75,7 @@ start_job(struct state *s)
 	pi = &s->pi[i];
 	n = s->jobs;
 	assert(n->type == NODE_JOB);
-	if ((pi->pid = popen2(n->cmd, i, &pi->fd)) < 0) {
+	if ((pi->pid = popen2(n->cmd, n->cwd, i, &pi->fd)) < 0) {
 		perror("popen2()");
 		return 1;
 	}

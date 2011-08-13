@@ -17,6 +17,8 @@
 #ifndef _YAM_H
 #define _YAM_H
 
+#include <sys/param.h> /* for MAXPATHLEN */
+
 #include <stdint.h>
 #include <stdio.h> /* for FILE */
 #include <time.h> /* for time_t */
@@ -47,6 +49,8 @@ struct jobs {
 
 struct graph {
 	struct node *index;
+	struct subdir *subdirs;
+	struct subdir *to_visit;
 };
 
 struct nodes {
@@ -61,6 +65,7 @@ struct node {
 	unsigned int visited :1;
 	char *name;
 	char *cmd;
+	const char *cwd;
 
 	/*
 	 * If > 0 this is the actual mtime.
@@ -72,7 +77,7 @@ struct node {
 	/*
 	 * Represent the number of node that needs to be built before this node
 	 * can be built.
-	 * If 0, this node can be built.
+	 * If 0, we can build this node.
 	 */
 	int waiting;
 
@@ -86,6 +91,12 @@ struct node {
 
 	/* This structure is hashable to maintain an index in the root */
 	UT_hash_handle hh;
+};
+
+struct subdir {
+	char path[MAXPATHLEN + 1];
+	struct subdir *next;
+	struct subdir *prev;
 };
 
 /* graph */
@@ -107,7 +118,7 @@ void yamfile(struct graph *g, const char *root);
 int do_jobs(struct graph *g, char *root);
 
 /* subprocess */
-pid_t popen2(const char *cmd, int child_id, int *fd);
+pid_t popen2(const char *cmd, const char *cwd, int child_id, int *fd);
 int pclose2(pid_t pid, int fd);
 
 /* ipc */

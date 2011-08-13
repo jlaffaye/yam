@@ -118,12 +118,15 @@ void
 graph_init(struct graph *g)
 {
 	g->index = NULL;
+	g->subdirs = NULL;
+	g->to_visit = NULL;
 }
 
 void
 graph_free(struct graph *g)
 {
 	struct node *n, *tmp;
+	struct subdir *subdir;
 
 	HASH_ITER(hh, g->index, n, tmp) {
 		HASH_DEL(g->index, n);
@@ -132,6 +135,12 @@ graph_free(struct graph *g)
 		free(n->childs.nodes);
 		free(n->parents.nodes);
 		free(n);
+	}
+
+	while (g->subdirs != NULL) {
+		subdir = g->subdirs;
+		LL_DELETE(g->subdirs, subdir);
+		free(subdir);
 	}
 }
 

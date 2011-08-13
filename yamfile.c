@@ -24,22 +24,38 @@
 #include "yam.h"
 
 /* No `void *data' for Lua callback... */
-static struct graph *_gg = NULL;
+static struct graph *_g = NULL;
 static size_t _rootlen = 0;
+static struct subdir *_subdir = NULL;
 
 static char *
 get_path(const char *src, char *buf)
 {
 	char *p;
 
-	p = realpath(src, buf);
+	if ((p = realpath(src, buf)) == NULL)
+		die("realpath(%s)", src);
 	p += _rootlen + 1;
 
 	return p;
 }
 
+static struct subdir *
+new_subdir(const char *path)
+{
+	struct subdir *s;
+
+	s = calloc(1, sizeof(struct subdir));
+	if (s == NULL)
+		die("calloc()");
+
+	strncpy(s->path, path, sizeof(s->path));
+
+	return s;
+}
+
 static int
-add_target(lua_State *L)
+l_add_target(lua_State *L)
 {
 	int i;
 	int tlen;
@@ -56,10 +72,11 @@ add_target(lua_State *L)
 	luaL_checktype(L, 3, LUA_TTABLE);
 
 	path = get_path(lua_tostring(L, 1), buf);
-	n = graph_get(_gg, path);
+	n = graph_get(_g, path);
 
 	n->cmd = strdup(lua_tostring(L, 2));
 	n->type = NODE_JOB;
+	n->cwd = _subdir->path;
 
 	tlen = luaL_getn(L, 3);
 	for (i = 1; i <= tlen; i++) {
@@ -70,7 +87,8 @@ add_target(lua_State *L)
 				   " contain strings");
 
 		path = get_path(lua_tostring(L, 4), buf);
-		graph_add_dep(_gg, n, path, NODE_DEP_EXPLICIT);
+printf("path=%s\n", path);
+		graph_add_dep(_g, n, path, NODE_DEP_EXPLICIT);
 
 		lua_pop(L, 1);
 	}
@@ -78,22 +96,62 @@ add_target(lua_State *L)
 	return 0;
 }
 
-void
-yamfile(struct graph *g, const char *root)
+static int
+l_subdir(lua_State *L)
+{
+	struct subdir *s;
+
+	if(lua_gettop(L) != 1)
+		luaL_error(L, "subdir: incorrect number of arguments");
+
+	luaL_checktype(L, 1, LUA_TSTRING);
+
+	s = new_subdir(lua_tostring(L, 1));
+	DL_APPEND(_g->to_visit, s);
+
+	return 0;
+}
+
+static void
+visit_subdir(struct subdir *s, const char *root)
 {
 	lua_State *L;
 
+	_subdir = s;
+
+	if (chdir(s->path) != 0)
+		die("chdir(%s)", s->path);
+
 	L = luaL_newstate();
 	luaL_openlibs(L);
-	lua_register(L, "add_target", add_target);
-
-	_gg = g;
-	_rootlen = strlen(root);
+	lua_register(L, "add_target", l_add_target);
+	lua_register(L, "subdir", l_subdir);
 
 	if (luaL_dofile(L, "Yamfile") != 0)
-		printf("luaL_dofile(): %s\n", lua_tostring(L, -1));
+		diex("luaL_dofile(): %s\n", lua_tostring(L, -1));
 
-	_gg = NULL;
-	_rootlen = 0;
 	lua_close(L);
+
+	if (chdir(root) != 0)
+		die("chdir(%s)", root);
+}
+
+void
+yamfile(struct graph *g, const char *root)
+{
+	struct subdir *s;
+
+	/* init globals */
+	_g = g;
+	_rootlen = strlen(root);
+
+	s = new_subdir(".");
+	DL_APPEND(_g->to_visit, s);
+
+	while(_g->to_visit != NULL) {
+		s = _g->to_visit;
+		visit_subdir(s, root);
+		DL_DELETE(_g->to_visit, s);
+		DL_APPEND(_g->subdirs, s);
+	}
 }

@@ -67,9 +67,12 @@ def test(expected):
 	if not out == expected:
 		print 'FAIL: %s instead of %s' % (out, expected)
 		traceback.print_stack()
+		return 1
 	else:
 		print 'PASS'
+		return 0
 
+failed = 0
 num = 100
 
 write_yamfile()
@@ -83,14 +86,16 @@ for i in range(num):
 	write_h(i, i)
 	total += i
 
-test(str(total))
+failed += test(str(total))
 
 time.sleep(1)
 write_h(0, 1)
 total += 1
-test(str(total))
+failed += test(str(total))
 
 time.sleep(1)
 write_base_h(1)
 total += num
-test(str(total))
+failed += test(str(total))
+
+print str(failed) + ' tests failed'
