@@ -29,9 +29,10 @@
 
 struct flags {
 	unsigned int clean :1;
-	uint8_t verbose;
 	unsigned int lint :1;
+	unsigned int fast :1;
 	unsigned int graphviz :1;
+	uint8_t verbose;
 	int jobs;
 };
 

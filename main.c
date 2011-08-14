@@ -82,10 +82,16 @@ main(int argc, char **argv)
 
 	bzero(&flags, sizeof(struct flags));
 
-	while ((ch = getopt(argc, argv, "clgj:")) != -1) {
+	while ((ch = getopt(argc, argv, "clfgj:v")) != -1) {
 		switch(ch) {
 			case 'c':
 				flags.clean = 1;
+				break;
+			case 'l':
+				flags.lint = 1;
+				break;
+			case 'f':
+				flags.fast = 1;
 				break;
 			case 'g':
 				flags.graphviz = 1;
@@ -94,9 +100,6 @@ main(int argc, char **argv)
 				flags.jobs = (int)strtol(optarg, (char **)NULL, 10);
 				if (flags.jobs == 0)
 					fprintf(stderr, "wrong -j arg `%s'", optarg);
-				break;
-			case 'l':
-				flags.lint = 1;
 				break;
 			case 'v':
 				flags.verbose++;

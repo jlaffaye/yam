@@ -165,15 +165,17 @@ finish_job(struct state *s, int i)
 	/*
 	 * Add an entry to the log
 	 */
-	log_entry_start(s->log, n->name, n->cmd);
-	LL_FOREACH(pi->files, f) {
-		if (f->mode == 'r' && f->explicit == 0)
-			log_entry_dep(s->log, f->path);
-	}
-	log_entry_finish(s->log);
+	if (flags.fast != 1) {
+		log_entry_start(s->log, n->name, n->cmd);
+		LL_FOREACH(pi->files, f) {
+			if (f->mode == 'r' && f->explicit == 0)
+				log_entry_dep(s->log, f->path);
+		}
+		log_entry_finish(s->log);
 
-	if (flags.lint == 1)
-		lint(s, pi);
+		if (flags.lint == 1)
+			lint(s, pi);
+	}
 
 	s->num_done++;
 	pi->node = NULL;
@@ -325,11 +327,13 @@ do_jobs(struct graph *g, char *root)
 		s.pfd[i].events = POLLIN;
 	}
 
-	s.log = log_open(root);
-	if (s.log == NULL)
-		die("can not open log file for writing");
+	if (flags.fast != 1) {
+		s.log = log_open(root);
+		if (s.log == NULL)
+			die("can not open log file for writing");
 
-	s.pfd[0].fd = ipc_listen(flags.jobs);
+		s.pfd[0].fd = ipc_listen(flags.jobs);
+	}
 
 	/*
 	 * Iterate as long as there are jobs to do/being done.
@@ -389,10 +393,11 @@ do_jobs(struct graph *g, char *root)
 	/*
 	 * Finalize and close the log file
 	 */
-	graph_dump_log(g, s.log);
-	log_close(s.log, root);
-
-	ipc_close(s.pfd[0].fd);
+	if (flags.fast != 1) {
+		graph_dump_log(g, s.log);
+		log_close(s.log, root);
+		ipc_close(s.pfd[0].fd);
+	}
 	free(s.pfd);
 	free(s.pi);
 	return error;

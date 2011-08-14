@@ -87,7 +87,6 @@ l_add_target(lua_State *L)
 				   " contain strings");
 
 		path = get_path(lua_tostring(L, 4), buf);
-printf("path=%s\n", path);
 		graph_add_dep(_g, n, path, NODE_DEP_EXPLICIT);
 
 		lua_pop(L, 1);
