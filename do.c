@@ -339,7 +339,7 @@ do_jobs(struct graph *g, char *root)
 	 * Iterate as long as there are jobs to do/being done.
 	 * If there is an error, we still want to wait for running jobs to finish.
 	 */
-	while (s.jobs != NULL || s.num_active > 0) {
+	while ((s.jobs != NULL && error == 0) || s.num_active > 0) {
 		/*
 		 * Launch new jobs if we have empty slots and if we have pending jobs.
 		 * If there is an error, we do not want to launch new jobs.

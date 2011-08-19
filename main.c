@@ -115,6 +115,9 @@ main(int argc, char **argv)
 	if( get_root(root, sizeof(root)) != 0)
 		die("can't find root");
 
+	if (chdir(root) != 0)
+		die("chdir(%s)", root);
+
 	graph_init(&g);
 	yamfile(&g, root);
 
