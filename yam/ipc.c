@@ -24,6 +24,8 @@
 
 #include "yam.h"
 
+#define WRAPPER_PATH "/home/jlaffaye/proj/yam/wrapper/libwrp.so"
+
 int
 ipc_listen(int num_clients)
 {
@@ -47,9 +49,12 @@ ipc_listen(int num_clients)
 	if (listen(fd, num_clients) < 0)
 		die("liten()");
 
-	setenv("YAM_IPC", path, 1);
-	/* FIXME */
-	putenv("LD_PRELOAD=/home/jlaffaye/proj/yam/wrapper/libwrp.so");
+	if (access(WRAPPER_PATH, F_OK) == 0) {
+		setenv("YAM_IPC", path, 1);
+		setenv("LD_PRELOAD", WRAPPER_PATH, 1);
+	} else {
+		printf("%s does not exist, dependency learning disabled", WRAPPER_PATH);
+	}
 
 	return fd;
 }
