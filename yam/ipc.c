@@ -53,7 +53,8 @@ ipc_listen(int num_clients)
 		setenv("YAM_IPC", path, 1);
 		setenv("LD_PRELOAD", WRAPPER_PATH, 1);
 	} else {
-		printf("%s does not exist, dependency learning disabled", WRAPPER_PATH);
+		printf("WARNING: %s does not exist, dependency learning disabled\n",
+				WRAPPER_PATH);
 	}
 
 	return fd;
