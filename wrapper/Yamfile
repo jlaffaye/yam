@@ -1,0 +1,8 @@
+LIB="libwrp.so"
+SRC="wrapper.c"
+
+CC="cc"
+CFLAGS="-shared -fPIC -I../contrib"
+
+cmd = string.format("%s %s wrapper.c -o %s", CC, CFLAGS, LIB)
+add_target(LIB, cmd, {SRC})

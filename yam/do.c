@@ -254,7 +254,7 @@ ipc(struct state *s)
 			if (strncmp(path, s->root, rootlen) != 0)
 				continue;
 
-			/* strip rootdir */
+			/* trim rootdir */
 			path += rootlen + 1;
 
 			/* ignore if already an explicit dep */

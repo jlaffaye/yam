@@ -1,6 +1,7 @@
 SHLIB_NAME=	libwrp.so
 SRCS=		wrapper.c
 
+
 OPSYS!=		uname
 .if ${OPSYS} == "FreeBSD"
 WARNS=		6
@@ -8,7 +9,7 @@ WARNS=		6
 WARN=		0
 .endif
 
-CFLAGS+=	-I../
+CFLAGS+=	-I../contrib
 LDFLAGS+=	-lpthread
 
 LIBDIR=		/usr/local/lib
