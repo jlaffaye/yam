@@ -24,7 +24,7 @@
 
 #include "yam.h"
 
-#define WRAPPER_PATH "/home/jlaffaye/proj/yam/wrapper/libwrp.so"
+#define WRAPPER_PATH "/usr/local/lib/libwrp.so"
 
 int
 ipc_listen(int num_clients)
