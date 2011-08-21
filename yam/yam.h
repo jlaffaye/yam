@@ -19,6 +19,7 @@
 
 #include <sys/param.h> /* for MAXPATHLEN */
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h> /* for FILE */
 #include <time.h> /* for time_t */
@@ -66,6 +67,7 @@ struct node {
 	unsigned int visited :1;
 	char *name;
 	char *cmd;
+	unsigned int new_cmd :1;
 	const char *cwd;
 
 	/*
@@ -103,7 +105,7 @@ struct subdir {
 /* graph */
 void graph_init(struct graph *g);
 void graph_free(struct graph *g);
-struct node * graph_get(struct graph *g, const char *key);
+struct node * graph_get(struct graph *g, const char *key, bool create);
 void graph_add_dep(struct graph *g, struct node *n, const char *name, int type);
 
 unsigned int graph_compute(struct graph *g, struct node **jobs);

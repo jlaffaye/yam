@@ -72,7 +72,7 @@ l_add_target(lua_State *L)
 	luaL_checktype(L, 3, LUA_TTABLE);
 
 	path = get_path(lua_tostring(L, 1), buf);
-	n = graph_get(_g, path);
+	n = graph_get(_g, path, true);
 
 	n->cmd = strdup(lua_tostring(L, 2));
 	n->type = NODE_JOB;

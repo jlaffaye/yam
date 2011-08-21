@@ -100,8 +100,19 @@ node_compute(struct node *n)
 		}
 	}
 
+	/*
+	 * The current node may have been marked to do during the depth
+	 * traversal.
+	 */
 	if (n->todo != 0)
 		return nb;
+
+	/*
+	 * If the command has changed, mark it to do now and avoid stat(2)
+	 * calls.
+	 */
+	if (n->new_cmd == 1)
+		return node_mark_todo(n);
 
 	NODE_STAT(n, st);
 
@@ -145,7 +156,7 @@ graph_free(struct graph *g)
 }
 
 struct node *
-graph_get(struct graph *g, const char *key)
+graph_get(struct graph *g, const char *key, bool create)
 {
 	struct node *n;
 	char *name;
@@ -153,11 +164,12 @@ graph_get(struct graph *g, const char *key)
 	name = (char *)key;
 
 	HASH_FIND_STR(g->index, name, n);
-	if (n == NULL) {
+	if (n == NULL && create == true) {
 		n = calloc(1, sizeof(struct node));
 		n->name = strdup(name);
 		HASH_ADD_KEYPTR(hh, g->index, n->name, strlen(n->name), n);
 	}
+
 	return n;
 }
 
@@ -166,7 +178,7 @@ graph_add_dep(struct graph *g, struct node *n, const char *name, int type)
 {
 	struct node *dep;
 
-	dep = graph_get(g, name);
+	dep = graph_get(g, name, true);
 
 	/*
 	 * If an implicit dep point to a job, it should be an explicit one.

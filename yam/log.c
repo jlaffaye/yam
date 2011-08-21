@@ -115,15 +115,22 @@ log_load(const char *dir, struct graph *g)
 			if (strcmp(line, LOG_EOF) == 0) {
 				state = STATE_EOF;
 			} else {
-				n = graph_get(g, line);
+				/*
+				 * If the entry does not exist in the graph, the current entry
+				 * is old. Do not create a new node for this entry.
+				 * This means that `n' might be NULL.
+				 */
+				n = graph_get(g, line, false);
 				state = STATE_CMD;
 			}
 		} else if (state == STATE_CMD) {
 			state = STATE_DEP;
-			// TODO: cmd
+			if (n != NULL && strcmp(n->cmd, line) != 0)
+				n->new_cmd = 1;
 		} else {
 			if (line[0] != '\0') {
-				graph_add_dep(g, n, line, NODE_DEP_IMPLICIT);
+				if (n != NULL)
+					graph_add_dep(g, n, line, NODE_DEP_IMPLICIT);
 			} else {
 				state = STATE_ENTRY;
 				n = NULL;
