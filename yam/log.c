@@ -15,6 +15,8 @@
  */
 
 #include <sys/param.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #include <assert.h>
 #include <errno.h>
@@ -88,6 +90,7 @@ int
 log_load(const char *dir, struct graph *g)
 {
 	char path[MAXPATHLEN];
+	struct stat st;
 	FILE *fp;
 	char *line = NULL;
 	size_t cap = 0;
@@ -96,15 +99,21 @@ log_load(const char *dir, struct graph *g)
 	struct node *n = NULL;
 
 	snprintf(path, sizeof(path), "%s/%s", dir, LOG_FILE);
-	fp = fopen(path, "r");
 
-	if (fp == NULL) {
+	if (stat(path, &st) != 0) {
 		if (errno == ENOENT) {
 			return 0;
 		} else {
-			perrorf("fopen(%s)", path);
+			perrorf("stat(%s)", path);
 			return -1;
 		}
+	}
+	g->log_mtime = st.st_mtime;
+
+	fp = fopen(path, "r");
+	if (fp == NULL) {
+		perrorf("fopen(%s)", path);
+		return -1;
 	}
 
 	while((len = getline(&line, &cap, fp)) > 0) {

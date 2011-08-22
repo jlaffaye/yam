@@ -53,6 +53,7 @@ struct graph {
 	struct node *index;
 	struct subdir *subdirs;
 	struct subdir *to_visit;
+	time_t log_mtime;
 };
 
 struct nodes {

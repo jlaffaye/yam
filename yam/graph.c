@@ -76,7 +76,7 @@ node_mark_todo(struct node *n)
 	}																		\
 
 static unsigned int
-node_compute(struct node *n)
+node_compute(struct graph *g, struct node *n)
 {
 	struct stat st;
 	size_t i;
@@ -96,7 +96,7 @@ node_compute(struct node *n)
 	/* depth first */
 	for (i = 0; i < n->childs.len; i++) {
 		if (n->childs.nodes[i]->type == NODE_JOB) {
-			nb += node_compute(n->childs.nodes[i]);
+			nb += node_compute(g, n->childs.nodes[i]);
 		}
 	}
 
@@ -115,6 +115,14 @@ node_compute(struct node *n)
 		return node_mark_todo(n);
 
 	NODE_STAT(n, st);
+
+	/*
+	 */
+	if (n->mtime > g->log_mtime) {
+		fprintf(stderr, "marking %s to do because it is newer than the log "
+				"file (should not happen)\n", n->name);
+		return node_mark_todo(n);
+	}
 
 	for (i = 0; i < n->childs.len; i++) {
 		NODE_STAT(n->childs.nodes[i], st);
@@ -209,7 +217,7 @@ graph_compute(struct graph *g, struct node **jobs)
 		if (n->todo != 0 || n->type != NODE_JOB)
 			continue;
 
-		nb += node_compute(n);
+		nb += node_compute(g, n);
 	}
 
 	HASH_ITER(hh, g->index, n, tmp) {
