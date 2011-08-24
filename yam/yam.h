@@ -87,7 +87,7 @@ struct node {
 
 	/* Adjency list */
 	struct nodes parents;
-	struct nodes childs;
+	struct nodes children;
 
 	/* Linked list of waiting jobs */
 	struct node *next;

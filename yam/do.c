@@ -113,8 +113,8 @@ lint(struct state *s, struct proc_info *pi)
 		}
 	}
 
-	for (i = 0; i < pi->node->childs.len; i++) {
-		dep = pi->node->childs.nodes[i];
+	for (i = 0; i < pi->node->children.len; i++) {
+		dep = pi->node->children.nodes[i];
 
 		if (dep->type != NODE_DEP_EXPLICIT)
 			continue;
@@ -259,8 +259,8 @@ ipc(struct state *s)
 
 			/* ignore if already an explicit dep */
 			explicit = 0;
-			for (size_t i = 0; i < n->childs.len; i++) {
-				dep = n->childs.nodes[i];
+			for (size_t i = 0; i < n->children.len; i++) {
+				dep = n->children.nodes[i];
 				if (dep->type != NODE_DEP_IMPLICIT && strcmp(dep->name, path) == 0) {
 					explicit = 1;
 					break;

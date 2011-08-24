@@ -94,9 +94,9 @@ node_compute(struct graph *g, struct node *n)
 	n->visited = 1;
 
 	/* depth first */
-	for (i = 0; i < n->childs.len; i++) {
-		if (n->childs.nodes[i]->type == NODE_JOB) {
-			nb += node_compute(g, n->childs.nodes[i]);
+	for (i = 0; i < n->children.len; i++) {
+		if (n->children.nodes[i]->type == NODE_JOB) {
+			nb += node_compute(g, n->children.nodes[i]);
 		}
 	}
 
@@ -124,9 +124,9 @@ node_compute(struct graph *g, struct node *n)
 		return node_mark_todo(n);
 	}
 
-	for (i = 0; i < n->childs.len; i++) {
-		NODE_STAT(n->childs.nodes[i], st);
-		if (n->childs.nodes[i]->mtime > n->mtime)
+	for (i = 0; i < n->children.len; i++) {
+		NODE_STAT(n->children.nodes[i], st);
+		if (n->children.nodes[i]->mtime > n->mtime)
 			return node_mark_todo(n);
 	}
 
@@ -151,7 +151,7 @@ graph_free(struct graph *g)
 		HASH_DEL(g->index, n);
 		free(n->name);
 		free(n->cmd);
-		free(n->childs.nodes);
+		free(n->children.nodes);
 		free(n->parents.nodes);
 		free(n);
 	}
@@ -200,7 +200,7 @@ graph_add_dep(struct graph *g, struct node *n, const char *name, int type)
 	if (dep->type == NODE_UNKNOWN)
 		dep->type = type;
 
-	nodes_add(&n->childs, dep);
+	nodes_add(&n->children, dep);
 	nodes_add(&dep->parents, n);
 }
 
@@ -239,8 +239,8 @@ graph_dump_log(struct graph *g, FILE *log)
 	HASH_ITER(hh, g->index, n, tmp) {
 		if (n->type == NODE_JOB && n->todo == 0) {
 			log_entry_start(log, n->name, n->cmd);
-			for (i = 0; i < n->childs.len; i++) {
-				dep = n->childs.nodes[i];
+			for (i = 0; i < n->children.len; i++) {
+				dep = n->children.nodes[i];
 				if (dep->type == NODE_DEP_IMPLICIT) {
 					log_entry_dep(log, dep->name);
 				}
@@ -263,13 +263,13 @@ dump_graphviz(struct graph *g, FILE *out)
 
 	for (n = g->index; n != NULL; n = n->hh.next) {
 		fprintf(out, "\"%p\" [label=\"%s\"];\n", n, n->name);
-		if (n->childs.len == 1) {
+		if (n->children.len == 1) {
 			fprintf(out, "\"%p\" -> \"%p\" [label=\" %s\"];\n",
-					n->childs.nodes[0], n, n->cmd);
-		} else if (n->childs.len > 1) {
+					n->children.nodes[0], n, n->cmd);
+		} else if (n->children.len > 1) {
 			fprintf(out, "\"%p!\" [shape=ellipse, label=\"%s\"];\n", n, n->cmd);
-			for (i = 0; i < n->childs.len; i++) {
-				fprintf(out, "\"%p\" -> \"%p!\";\n", n->childs.nodes[i],
+			for (i = 0; i < n->children.len; i++) {
+				fprintf(out, "\"%p\" -> \"%p!\";\n", n->children.nodes[i],
 						n);
 			}
 			fprintf(out, "\"%p!\" -> \"%p\";", n, n);
