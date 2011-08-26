@@ -117,8 +117,12 @@ node_compute(struct graph *g, struct node *n)
 	NODE_STAT(n, st);
 
 	/*
+	 * Test if this target is newer than the log file.
+	 * If it is the case, we rebuild it to get another chance to discover its
+	 * dependencies.
+	 * If the mtime of the log file is < 0, there was no log file.
 	 */
-	if (n->mtime > g->log_mtime) {
+	if (g->log_mtime > 0 && n->mtime > g->log_mtime) {
 		fprintf(stderr, "marking %s to do because it is newer than the log "
 				"file (should not happen)\n", n->name);
 		return node_mark_todo(n);

@@ -101,6 +101,7 @@ log_load(const char *dir, struct graph *g)
 	snprintf(path, sizeof(path), "%s/%s", dir, LOG_FILE);
 
 	if (stat(path, &st) != 0) {
+		g->log_mtime = -1;
 		if (errno == ENOENT) {
 			return 0;
 		} else {
