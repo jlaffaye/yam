@@ -27,6 +27,7 @@
 static struct graph *_g = NULL;
 static size_t _rootlen = 0;
 static struct subdir *_subdir = NULL;
+static struct subdir *_subdirs = NULL;
 
 static char *
 get_path(const char *src, char *buf)
@@ -109,7 +110,10 @@ l_subdir(lua_State *L)
 	path = get_path(lua_tostring(L, 1), buf);
 
 	s = new_subdir(path);
-	DL_APPEND(_g->to_visit, s);
+	/*
+	 * Prepend, so the last subdir is at the beginning.
+	 */
+	DL_PREPEND(_subdirs, s);
 
 	return 0;
 }
@@ -117,9 +121,11 @@ l_subdir(lua_State *L)
 static void
 visit_subdir(struct subdir *s, const char *root)
 {
+	struct subdir *tmp;
 	lua_State *L;
 
 	_subdir = s;
+	_subdirs = NULL;
 
 	if (chdir(s->path) != 0)
 		die("chdir(%s)", s->path);
@@ -133,6 +139,16 @@ visit_subdir(struct subdir *s, const char *root)
 		diex("luaL_dofile(): %s\n", lua_tostring(L, -1));
 
 	lua_close(L);
+
+	/*
+	 * _subdirs being a LIFO, we prepend so we restore the correct order
+	 * at the beginning of to_visit.
+	 */
+	while (_subdirs != NULL) {
+		tmp = _subdirs;
+		DL_DELETE(_subdirs, tmp);
+		DL_PREPEND(_g->to_visit, tmp);
+	}
 
 	if (chdir(root) != 0)
 		die("chdir(%s)", root);
