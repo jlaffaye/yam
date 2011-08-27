@@ -98,14 +98,17 @@ l_add_target(lua_State *L)
 static int
 l_subdir(lua_State *L)
 {
+	char buf[PATH_MAX];
+	const char *path;
 	struct subdir *s;
 
 	if(lua_gettop(L) != 1)
 		luaL_error(L, "subdir: incorrect number of arguments");
 
 	luaL_checktype(L, 1, LUA_TSTRING);
+	path = get_path(lua_tostring(L, 1), buf);
 
-	s = new_subdir(lua_tostring(L, 1));
+	s = new_subdir(path);
 	DL_APPEND(_g->to_visit, s);
 
 	return 0;
